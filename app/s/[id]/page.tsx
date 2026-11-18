@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api, ensureAudio, getPasskey, unlockAudio } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
@@ -32,6 +32,7 @@ function usePref<T>(key: string, initial: T): [T, (v: T) => void] {
 export default function Scene() {
   const { id } = useParams<{ id: string }>();
   const { t } = useI18n();
+  const router = useRouter();
   const [script, setScript] = useState<Script | null>(null);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState<[number, number] | null>(null);
@@ -66,9 +67,29 @@ export default function Scene() {
   }
 
   async function setMe(characterId: string) {
-    if (!script) return;
+    async function remove() {
+    if (!confirm(t('deleteSceneConfirm'))) return;
+    try {
+      await api(`/scripts/${id}`, { method: 'DELETE' });
+      router.replace('/');
+    } catch (e) {
+      setWarn(e instanceof Error ? e.message : String(e));
+    }
+  }
+
+  if (!script) return;
     setScript({ ...script, my_character_id: characterId });
     await api(`/scripts/${id}`, { method: 'PATCH', body: JSON.stringify({ my_character_id: characterId }) }).catch(() => {});
+  }
+
+  async function remove() {
+    if (!confirm(t('deleteSceneConfirm'))) return;
+    try {
+      await api(`/scripts/${id}`, { method: 'DELETE' });
+      router.replace('/');
+    } catch (e) {
+      setWarn(e instanceof Error ? e.message : String(e));
+    }
   }
 
   if (!script) return <><TopBar title="" back="/" /><Status error={error} onRetry={load} /></>;
@@ -148,6 +169,10 @@ export default function Scene() {
             );
           })}
         </ol>
+
+        <button className="btn btn-danger mt-4" onClick={remove}>
+          🗑 {t('deleteScene')}
+        </button>
       </Page>
 
       {progress && <Overlay title={t('recording')} done={progress[0]} total={progress[1]} />}
