@@ -67,7 +67,7 @@ export default function Home() {
         )}
       </Page>
       <div className="fixed inset-x-0 bottom-0 border-t border-line bg-bg/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <Link href="/new" className="btn btn-primary mx-auto flex max-w-2xl text-xl">
+        <Link href="/new" className="btn btn-primary mx-auto flex w-full max-w-2xl text-xl">
           + {t('newScene')}
         </Link>
       </div>
