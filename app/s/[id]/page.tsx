@@ -6,6 +6,7 @@ import { api, ensureAudio, getPasskey, unlockAudio } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
 import type { Script } from '@/lib/types';
 import Player from '@/components/Player';
+import Select from '@/components/Select';
 import { Overlay, Page, Status, TopBar } from '@/components/ui';
 
 const RATES = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
@@ -102,17 +103,16 @@ export default function Scene() {
       <Page>
         {script.author && <p className="text-dim" dir="auto">{script.author}</p>}
 
-        <label className="card flex items-center gap-3 p-4">
+        <div className="card flex items-center gap-3 p-4">
           <span className="text-xl font-semibold">{t('iAm')}</span>
-          <select className="field flex-1 text-xl font-bold text-mine" value={script.my_character_id || ''} onChange={(e) => setMe(e.target.value)}>
-            {!script.my_character_id && <option value="">—</option>}
-            {script.characters.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <Select
+            className="flex-1 text-xl font-bold text-mine"
+            label={t('iAm')}
+            value={script.my_character_id || ''}
+            options={script.characters.map((c) => ({ value: c.id, label: c.name }))}
+            onChange={setMe}
+          />
+        </div>
 
         <button className="btn btn-primary min-h-20 text-3xl" disabled={!script.my_character_id || !script.lines.length} onClick={() => play(0)}>
           ▶ {t('play')}
@@ -129,16 +129,16 @@ export default function Scene() {
             <input type="checkbox" className="h-6 w-6 accent-amber-400" checked={memorize} onChange={(e) => setMemorize(e.target.checked)} />
             {t('memorize')}
           </label>
-          <label className="flex items-center gap-3 text-lg">
+          <div className="flex items-center gap-3 text-lg">
             <span className="flex-1">{t('speed')}</span>
-            <select className="field w-auto" dir="ltr" value={rate} onChange={(e) => setRate(Number(e.target.value))}>
-              {RATES.map((r) => (
-                <option key={r} value={r}>
-                  ×{r}
-                </option>
-              ))}
-            </select>
-          </label>
+            <Select
+              className="w-28"
+              label={t('speed')}
+              value={String(rate)}
+              options={RATES.map((r) => ({ value: String(r), label: `\u200e×${r}` }))}
+              onChange={(v) => setRate(Number(v))}
+            />
+          </div>
         </div>
 
         <div className="flex gap-3">

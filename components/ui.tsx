@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useI18n } from '@/lib/i18n';
 
 export function LangToggle() {
@@ -69,6 +69,54 @@ export function Overlay({ title, hint, done, total }: { title: string; hint?: st
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Steps of a flow: done steps are filled, the current one is highlighted. */
+export function Stepper({ steps, current }: { steps: string[]; current: number }) {
+  return (
+    <ol className="flex gap-2" aria-label={steps[current]}>
+      {steps.map((s, i) => (
+        <li key={s} className="flex min-w-0 flex-1 flex-col gap-1.5" aria-current={i === current ? 'step' : undefined}>
+          <span className={`h-1.5 rounded-full transition-colors ${i <= current ? 'bg-mine' : 'bg-card2'}`} />
+          <span className={`truncate text-center text-sm ${i === current ? 'font-bold text-ink' : i < current ? 'text-ink/70' : 'text-dim'}`}>
+            {i < current ? '✓ ' : ''}
+            {s}
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/**
+ * Inline progress card. With done/total it shows real progress; with estimateMs it shows
+ * an estimate that eases toward (never reaching) the end until the work actually finishes.
+ */
+export function ProgressCard({ title, hint, done, total, estimateMs }: { title: string; hint?: string; done?: number; total?: number; estimateMs?: number }) {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!estimateMs) return;
+    const startedAt = Date.now();
+    const timer = setInterval(() => setElapsed(Date.now() - startedAt), 250);
+    return () => clearInterval(timer);
+  }, [estimateMs]);
+  const real = total ? (done || 0) / total : null;
+  const fraction = real ?? (estimateMs ? 0.95 * (1 - Math.exp((-2.2 * elapsed) / estimateMs)) : 0);
+  const pct = Math.round(fraction * 100);
+  return (
+    <div className="card flex flex-col gap-4 p-6" role="status" aria-live="polite">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="text-2xl font-semibold">{title}</p>
+        <p className="text-xl font-bold tabular-nums text-mine" dir="ltr">
+          {total ? `${done || 0}/${total}` : `${pct}%`}
+        </p>
+      </div>
+      <div className="h-3 overflow-hidden rounded-full bg-card2" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+        <div className="bar-live h-full rounded-full bg-mine transition-[width] duration-300 ease-out" style={{ width: `${Math.max(pct, 3)}%` }} />
+      </div>
+      {hint && <p className="text-dim">{hint}</p>}
     </div>
   );
 }

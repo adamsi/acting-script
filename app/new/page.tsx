@@ -5,7 +5,7 @@ import { api, draftFromParsed, ensureAudio } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
 import type { Draft, Script, Voice } from '@/lib/types';
 import { CharactersEditor, LinesEditor, draftProblem } from '@/components/Editor';
-import { Overlay, Page, TopBar } from '@/components/ui';
+import { Page, ProgressCard, Stepper, TopBar } from '@/components/ui';
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
@@ -70,11 +70,19 @@ export default function NewScene() {
 
   return (
     <>
-      <TopBar title={step === 0 ? t('uploadTitle') : `${step}/2 · ${step === 1 ? t('stepCharacters') : t('stepLines')}`} back="/" />
+      <TopBar title={t('newScene')} back="/" />
       <Page>
+        <Stepper
+          steps={[t('stepUpload'), t('stepCharacters'), t('stepLines'), t('stepRecord')]}
+          current={busy === 'save' || busy === 'record' ? 3 : step}
+        />
         {error && <p className="card border-red-400/50 p-4 text-red-300" dir="auto">{error}</p>}
 
-        {step === 0 && (
+        {busy === 'parse' && <ProgressCard title={t('analyzing')} hint={file?.name} estimateMs={40000} />}
+        {busy === 'save' && <ProgressCard title={t('saving')} estimateMs={3000} />}
+        {busy === 'record' && <ProgressCard title={t('recording')} hint={t('recordingHint')} done={progress[0]} total={progress[1]} />}
+
+        {!busy && step === 0 && (
           <label className="card flex cursor-pointer flex-col items-center gap-4 p-10 text-center">
             <span className="text-6xl" aria-hidden>📄</span>
             <span className="text-xl text-dim">{t('uploadHint')}</span>
@@ -91,7 +99,7 @@ export default function NewScene() {
           </label>
         )}
 
-        {step === 1 && draft && (
+        {!busy && step === 1 && draft && (
           <>
             <input className="field text-2xl font-bold" dir="auto" aria-label={t('title')} placeholder={t('title')} value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
             <input className="field" dir="auto" aria-label={t('author')} placeholder={t('author')} value={draft.author} onChange={(e) => setDraft((d) => ({ ...d, author: e.target.value }))} />
@@ -100,7 +108,7 @@ export default function NewScene() {
           </>
         )}
 
-        {step === 2 && draft && (
+        {!busy && step === 2 && draft && (
           <>
             <p className="text-xl font-semibold">{t('checkLines')}</p>
             <LinesEditor draft={draft} setDraft={setDraft} />
@@ -108,7 +116,7 @@ export default function NewScene() {
         )}
       </Page>
 
-      {step > 0 && draft && (
+      {!busy && step > 0 && draft && (
         <div className="fixed inset-x-0 bottom-0 border-t border-line bg-bg/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-2xl gap-3">
             <button className="btn" onClick={() => setStep(step - 1)}>
@@ -127,9 +135,6 @@ export default function NewScene() {
         </div>
       )}
 
-      {busy === 'parse' && <Overlay title={t('analyzing')} hint={t('analyzingHint')} />}
-      {busy === 'save' && <Overlay title={t('saving')} />}
-      {busy === 'record' && <Overlay title={t('recording')} done={progress[0]} total={progress[1]} />}
     </>
   );
 }

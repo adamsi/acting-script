@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { apiBlob, newKey, pickVoice, playBlob, unlockAudio } from '@/lib/client';
+import Select from './Select';
 import type { Draft, DraftCharacter, DraftLine, Gender, Voice } from '@/lib/types';
 
 type SetDraft = (fn: (d: Draft) => Draft) => void;
@@ -70,29 +71,25 @@ export function CharactersEditor({ draft, setDraft, voices }: { draft: Draft; se
             </button>
             {!mine && (
               <div className="flex flex-wrap items-center gap-2">
-                <select
-                  className="field w-auto"
-                  value={c.gender === 'unknown' ? '' : c.gender}
-                  aria-label={`${t('male')}/${t('female')}`}
-                  onChange={(e) => setGender(c, e.target.value as Gender)}
-                >
-                  {c.gender === 'unknown' && <option value="">?</option>}
-                  <option value="male">{t('male')}</option>
-                  <option value="female">{t('female')}</option>
-                </select>
-                <select
-                  className="field min-w-0 flex-1"
+                <Select
+                  className="w-28"
+                  label={`${t('male')} / ${t('female')}`}
+                  value={c.gender}
+                  placeholder="?"
+                  options={[
+                    { value: 'male', label: t('male') },
+                    { value: 'female', label: t('female') },
+                  ]}
+                  onChange={(v) => setGender(c, v as Gender)}
+                />
+                <Select
+                  className="min-w-0 flex-1"
+                  label={t('voice')}
                   value={c.voice_id}
-                  aria-label={t('voice')}
-                  onChange={(e) => update(c.key, { voice_id: e.target.value })}
-                >
-                  {!voices.some((v) => v.id === c.voice_id) && <option value={c.voice_id}>{c.voice_id || '—'}</option>}
-                  {voices.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name} · {genderLabel(v.gender)}
-                    </option>
-                  ))}
-                </select>
+                  placeholder={c.voice_id || '—'}
+                  options={voices.map((v) => ({ value: v.id, label: `${v.name} · ${genderLabel(v.gender)}`, hint: v.description }))}
+                  onChange={(v) => update(c.key, { voice_id: v })}
+                />
                 <button className="btn" onClick={() => preview(c)} disabled={!c.voice_id || previewing === c.key}>
                   {previewing === c.key ? '…' : `▶ ${t('listen')}`}
                 </button>
@@ -177,18 +174,13 @@ export function LinesEditor({
               <span className="w-8 shrink-0 text-center text-dim" dir="ltr">
                 {i + 1}
               </span>
-              <select
-                className={`field min-w-0 flex-1 font-bold ${mine ? 'text-mine' : 'text-other'}`}
+              <Select
+                className={`min-w-0 flex-1 font-bold ${mine ? 'text-mine' : 'text-other'}`}
+                label={t('characters')}
                 value={l.speaker}
-                aria-label={t('characters')}
-                onChange={(e) => update(l.key, { speaker: e.target.value })}
-              >
-                {draft.characters.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.name || '—'}
-                  </option>
-                ))}
-              </select>
+                options={draft.characters.map((c) => ({ value: c.key, label: c.name || '—' }))}
+                onChange={(v) => update(l.key, { speaker: v })}
+              />
               <button
                 className="btn min-h-12 px-3"
                 title={t('addLineBelow')}
