@@ -17,17 +17,6 @@ export default function Home() {
   }, []);
   useEffect(load, [load]);
 
-  async function remove(s: ScriptSummary) {
-    if (!confirm(`${t('deleteSceneConfirm')}\n${s.title}`)) return;
-    try {
-      await api(`/scripts/${s.id}`, { method: 'DELETE' });
-      setScripts((list) => list && list.filter((x) => x.id !== s.id));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
-      setScripts(null);
-    }
-  }
-
   return (
     <>
       <TopBar title={t('myScenes')} />
@@ -38,31 +27,21 @@ export default function Home() {
           <p className="p-8 text-center text-xl text-dim">{t('noScenes')}</p>
         ) : (
           scripts.map((s) => (
-            <div key={s.id} className="card flex items-stretch">
-              <Link href={`/s/${s.id}`} className="min-w-0 flex-1 rounded-s-2xl p-5 active:bg-card2">
-                <p className="text-2xl font-bold leading-snug" dir="auto">
-                  {s.title || '—'}
-                </p>
-                <p className="mt-1 text-dim">
-                  {s.author && <span dir="auto">{s.author} · </span>}
-                  {s.line_count} {t('linesCount')}
-                  {s.my_name && (
-                    <>
-                      {' · '}
-                      {t('iAm')} <b className="text-mine">{s.my_name}</b>
-                    </>
-                  )}
-                </p>
-              </Link>
-              <button
-                className="flex w-16 shrink-0 items-center justify-center rounded-e-2xl border-s border-line text-2xl text-red-300 active:bg-card2"
-                aria-label={`${t('deleteScene')}: ${s.title}`}
-                title={t('deleteScene')}
-                onClick={() => remove(s)}
-              >
-                🗑
-              </button>
-            </div>
+            <Link key={s.id} href={`/s/${s.id}`} className="card block p-5 active:bg-card2">
+              <p className="text-2xl font-bold leading-snug" dir="auto">
+                {s.title || '—'}
+              </p>
+              <p className="mt-1 text-dim">
+                {s.author && <span dir="auto">{s.author} · </span>}
+                {s.line_count} {t('linesCount')}
+                {s.my_name && (
+                  <>
+                    {' · '}
+                    {t('iAm')} <b className="text-mine">{s.my_name}</b>
+                  </>
+                )}
+              </p>
+            </Link>
           ))
         )}
       </Page>
