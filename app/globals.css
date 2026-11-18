@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #0e1014;
+  --color-card: #191c23;
+  --color-card2: #232732;
+  --color-line: #2f3442;
+  --color-ink: #f4f5f7;
+  --color-dim: #9aa1b2;
+  --color-mine: #fbbf24;
+  --color-other: #7dd3fc;
+  --font-sans: var(--font-heebo), system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-size: 18px;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+button, a { touch-action: manipulation; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.45; }
+textarea, input, select { font: inherit; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  min-height: 3.25rem; padding: 0 1.25rem; border-radius: 0.9rem;
+  background: var(--color-card2); color: var(--color-ink); font-weight: 600; font-size: 1.1rem;
+  border: 1px solid var(--color-line);
+}
+.btn-primary { background: var(--color-mine); color: #1a1300; border-color: transparent; }
+.btn-danger { color: #fca5a5; }
+.field {
+  width: 100%; min-height: 3rem; padding: 0.6rem 0.8rem; border-radius: 0.7rem;
+  background: var(--color-bg); color: var(--color-ink); border: 1px solid var(--color-line);
+}
+.field:focus, .btn:focus-visible { outline: 2px solid var(--color-other); outline-offset: 1px; }
+.card { background: var(--color-card); border: 1px solid var(--color-line); border-radius: 1rem; }
