@@ -76,7 +76,8 @@ export default function Settings() {
       const s = await persist(draft);
       const saved = s.lines[idx];
       setBusyLine(saved.id);
-      const r = await ensureAudio(s, { force: true, lineIds: [saved.id] });
+      // A manual re-record gets the pronunciation check too (unless the user wrote the pronunciation).
+      const r = await ensureAudio(s, { force: true, improve: s.language === 'he', lineIds: [saved.id] });
       if (r.failed) throw new Error(t('recordingFailed'));
       await playBlob(await apiBlob(`/lines/${saved.id}/audio`));
     } catch (e) {

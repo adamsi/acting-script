@@ -34,6 +34,7 @@ create table if not exists lines (
   audio_timings jsonb,
   audio_hash text
 );
+alter table lines add column if not exists audio_improved boolean not null default false;
 create index if not exists lines_script_idx on lines(script_id, idx);
 create index if not exists characters_script_idx on characters(script_id, idx);
 `;

@@ -17,6 +17,8 @@ export interface Line {
   has_audio: boolean;
   /** audio exists and matches the current text + voice */
   fresh: boolean;
+  /** pronunciation of this recording was checked and corrected (or the user wrote it) */
+  improved: boolean;
   hash: string;
   timings: number[][] | null;
 }

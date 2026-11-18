@@ -13,8 +13,17 @@ continues only when you tap the screen (or press Enter).
 4. **Play**: the current line is shown zoomed in, words are highlighted as they are spoken, upcoming lines are listed below. On your line the app waits for a tap / Enter / Space.
 
 Extras: start from any line, continue where you stopped, memorize mode (hides your lines),
-speech speed, replay last cue, pause, change who you are, edit lines, per-line pronunciation
-override (e.g. with nikud) and re-record a line or all lines, open the original file.
+speech speed, replay last cue, pause, change who you are, edit lines, re-record a line or all
+lines, open the original file.
+
+### Hebrew pronunciation
+
+Unvocalized Hebrew is ambiguous and the TTS engine guesses some words wrong (and ignores nikud).
+Inworld reports the phonemes it actually spoke, so **Improve Hebrew pronunciation** on the scene
+page sends each recorded line's phonemes, with scene context, to OpenAI, which returns only the
+mispronounced words in IPA; those words are re-spoken from inline `/IPA/`, which the engine
+pronounces literally. It takes a few minutes per scene. A line can also be fixed by hand in
+Settings: write a phonetic spelling or `/IPA/` in the line's pronunciation field and re-record.
 
 ## Stack
 
@@ -32,6 +41,7 @@ automatically on first request.
 | `INWORLD_API_KEY` | The Base64 "Basic" key from the Inworld portal. |
 | `OPENAI_MODEL` | Optional, default `gpt-5.4`. |
 | `INWORLD_MODEL` | Optional, default `inworld-tts-1.5-max`. |
+| `PRONUNCIATION_EFFORT` | Optional, OpenAI reasoning effort for the pronunciation check, default `medium`. |
 
 ## Deploy on Vercel
 

@@ -90,3 +90,25 @@ describe('text helpers', () => {
     expect(wordsSpoken(null, 4, 0, 0)).toBe(0);
   });
 });
+
+import { applyFixes, canonical, isRealChange, normalizeHebrew } from '../lib/pronounce';
+
+describe('pronunciation helpers', () => {
+  it('turns ASCII apostrophes inside Hebrew words into geresh / gershayim', () => {
+    expect(normalizeHebrew("ג'סי וצה\"ל, it's")).toBe('ג׳סי וצה״ל, it\'s');
+  });
+  it('moves the stress mark to the vowel and unifies engine symbols', () => {
+    expect(canonical('/niˈsita/')).toBe('nisˈita');
+    expect(canonical('lɛhavɾiax')).toBe('lehavriax');
+  });
+  it('ignores stress-only proposals unless the engine stressed another syllable', () => {
+    expect(isRealChange('tipalt', 'tipˈalt')).toBe(false);
+    expect(isRealChange('haraɡtˈi', 'harˈaɡti')).toBe(true);
+    expect(isRealChange('bamaxbesa', 'bamixbasˈa')).toBe(true);
+    expect(isRealChange('korˈe', 'koˈre')).toBe(false);
+  });
+  it('replaces only the corrected words, keeping spacing and punctuation', () => {
+    const tokens = ['', 'אתה', ' ', 'עובד', ' ', 'במכבסה', '?', ''].map((text) => ({ text, phones: '' }));
+    expect(applyFixes(tokens, [{ index: 5, word: 'במכבסה', ipa: 'bamixbasˈa' }])).toBe('אתה עובד /bamixbasˈa/?');
+  });
+});

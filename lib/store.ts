@@ -29,7 +29,7 @@ export async function getScript(id: string): Promise<Script | null> {
   const voiceOf = new Map(characters.map((c) => [c.id, c.voice_id]));
   const rows = await sql`
     select id, idx, character_id, text, spoken_text, audio is not null as has_audio,
-           audio_hash, audio_timings
+           audio_hash, audio_timings, audio_improved
     from lines where script_id = ${id} order by idx`;
   const lines: Line[] = rows.map((r) => {
     const hash = audioHash(spokenOf(r as never), voiceOf.get(r.character_id) || '');
@@ -41,6 +41,7 @@ export async function getScript(id: string): Promise<Script | null> {
       spoken_text: r.spoken_text,
       has_audio: r.has_audio,
       fresh: r.has_audio && r.audio_hash === hash,
+      improved: r.has_audio && r.audio_hash === hash && r.audio_improved,
       hash,
       timings: r.audio_timings,
     };

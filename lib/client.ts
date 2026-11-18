@@ -99,28 +99,30 @@ export const spokenOf = (l: { text: string; spoken_text: string }) =>
  */
 export async function ensureAudio(
   script: Script,
-  opts: { force?: boolean; lineIds?: string[]; allCharacters?: boolean },
+  opts: { force?: boolean; improve?: boolean; lineIds?: string[]; allCharacters?: boolean },
   onProgress?: (done: number, total: number) => void
-): Promise<{ script: Script; failed: number }> {
+): Promise<{ script: Script; failed: number; fixed: number }> {
   const only = opts.lineIds ? new Set(opts.lineIds) : null;
   const todo = script.lines.filter((l) => {
     if (only && !only.has(l.id)) return false;
     if (!only && !opts.allCharacters && l.character_id === script.my_character_id) return false;
     if (!spokenOf(l)) return false;
-    return opts.force || !l.fresh;
+    return opts.force || !l.fresh || (!!opts.improve && !l.improved);
   });
   const updates = new Map<string, Partial<Line>>();
   let done = 0;
   let failed = 0;
+  let fixed = 0;
   onProgress?.(0, todo.length);
   const queue = [...todo];
   const worker = async () => {
     for (let l = queue.shift(); l; l = queue.shift()) {
       try {
-        const r = await api<Partial<Line>>(`/lines/${l.id}/audio`, {
+        const { fixes, ...r } = await api<Partial<Line> & { fixes?: unknown[] }>(`/lines/${l.id}/audio`, {
           method: 'POST',
-          body: JSON.stringify({ force: !!opts.force }),
+          body: JSON.stringify({ force: !!opts.force, improve: !!opts.improve }),
         });
+        fixed += fixes?.length || 0;
         forgetClip(l);
         updates.set(l.id, r);
       } catch {
@@ -129,10 +131,12 @@ export async function ensureAudio(
       onProgress?.(++done, todo.length);
     }
   };
-  await Promise.all([worker(), worker(), worker()]);
+  // Pronunciation checks are slow, so more of them run side by side.
+  await Promise.all(Array.from({ length: opts.improve ? 6 : 3 }, worker));
   return {
     script: { ...script, lines: script.lines.map((l) => ({ ...l, ...updates.get(l.id) })) },
     failed,
+    fixed,
   };
 }
 

@@ -37,6 +37,8 @@ export default function Scene() {
   const [script, setScript] = useState<Script | null>(null);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState<[number, number] | null>(null);
+  const [improving, setImproving] = useState(false);
+  const [note, setNote] = useState('');
   const [playFrom, setPlayFrom] = useState<number | null>(null);
   const [warn, setWarn] = useState('');
   const [memorize, setMemorize] = usePref('memorize', false);
@@ -67,6 +69,22 @@ export default function Scene() {
     setPlayFrom(Math.min(from, current.lines.length - 1));
   }
 
+  async function improve() {
+    if (!script) return;
+    setWarn('');
+    setNote('');
+    setImproving(true);
+    setProgress([0, 0]);
+    const r = await ensureAudio(script, { improve: true }, (d, n) => setProgress([d, n]));
+    setScript(r.script);
+    setProgress(null);
+    setImproving(false);
+    const unchecked = r.script.lines.some((l) => l.character_id !== r.script.my_character_id && l.fresh && !l.improved);
+    if (r.failed) setWarn(t('recordingFailed'));
+    else if (unchecked) setWarn(t('improveFailed'));
+    if (!unchecked || r.fixed) setNote(`${t('improvedDone')} · ${r.fixed} ${t('improvedWords')}`);
+  }
+
   async function setMe(characterId: string) {
     async function remove() {
     if (!confirm(t('deleteSceneConfirm'))) return;
@@ -95,6 +113,10 @@ export default function Scene() {
 
   if (!script) return <><TopBar title="" back="/" /><Status error={error} onRetry={load} /></>;
 
+  const canImprove =
+    script.language === 'he' &&
+    !!script.my_character_id &&
+    script.lines.some((l) => l.character_id !== script.my_character_id && !l.improved && !!l.text.replace(/\([^)]*\)/g, '').trim());
   const resumeAt = script.last_line_idx > 0 && script.last_line_idx < script.lines.length ? script.last_line_idx : 0;
 
   return (
@@ -123,6 +145,15 @@ export default function Scene() {
           </button>
         )}
         {warn && <p className="text-red-300">{warn}</p>}
+        {note && <p className="text-other" role="status">✓ {note}</p>}
+        {canImprove && (
+          <div className="card flex flex-col gap-3 p-4">
+            <p className="text-dim">{t('improveHint')}</p>
+            <button className="btn" onClick={improve}>
+              ✨ {t('improve')}
+            </button>
+          </div>
+        )}
 
         <div className="card flex flex-col gap-4 p-4">
           <label className="flex items-center gap-3 text-lg">
@@ -175,7 +206,9 @@ export default function Scene() {
         </button>
       </Page>
 
-      {progress && <Overlay title={t('recording')} done={progress[0]} total={progress[1]} />}
+      {progress && (
+        <Overlay title={improving ? t('improving') : t('recording')} hint={improving ? t('improvingHint') : undefined} done={progress[0]} total={progress[1]} />
+      )}
       {playFrom !== null && (
         <Player
           script={script}
