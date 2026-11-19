@@ -54,6 +54,8 @@ const dict = {
     'Text in (parentheses) is a stage direction — shown but not spoken',
   ],
   pronunciation: ['הגייה: כתיב פונטי או ‎/IPA/', 'Pronunciation: phonetic spelling or /IPA/'],
+  needRecording: ['שורות בלי הקלטה עדכנית. בלי הקלטה השורה תוצג כטקסט בלבד.', 'lines have no up-to-date recording. Without one the line is shown as text only.'],
+  createRecordings: ['צור הקלטות', 'Create recordings'],
   improve: ['שפר הגייה בעברית', 'Improve Hebrew pronunciation'],
   improveHint: ['בודק כל מילה שהוקלטה ומתקן מילים שנאמרו לא נכון. לוקח כמה דקות.', 'Checks every recorded word and fixes mispronounced ones. Takes a few minutes.'],
   improving: ['משפר הגייה…', 'Improving pronunciation…'],

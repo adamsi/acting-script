@@ -101,7 +101,7 @@ export async function ensureAudio(
   script: Script,
   opts: { force?: boolean; improve?: boolean; lineIds?: string[]; allCharacters?: boolean },
   onProgress?: (done: number, total: number) => void
-): Promise<{ script: Script; failed: number; fixed: number }> {
+): Promise<{ script: Script; failed: number; fixed: number; error: string }> {
   const only = opts.lineIds ? new Set(opts.lineIds) : null;
   const todo = script.lines.filter((l) => {
     if (only && !only.has(l.id)) return false;
@@ -113,6 +113,7 @@ export async function ensureAudio(
   let done = 0;
   let failed = 0;
   let fixed = 0;
+  let error = '';
   onProgress?.(0, todo.length);
   const queue = [...todo];
   const worker = async () => {
@@ -125,8 +126,9 @@ export async function ensureAudio(
         fixed += fixes?.length || 0;
         forgetClip(l);
         updates.set(l.id, r);
-      } catch {
+      } catch (e) {
         failed++;
+        error ||= e instanceof Error ? e.message : String(e);
       }
       onProgress?.(++done, todo.length);
     }
@@ -137,6 +139,7 @@ export async function ensureAudio(
     script: { ...script, lines: script.lines.map((l) => ({ ...l, ...updates.get(l.id) })) },
     failed,
     fixed,
+    error,
   };
 }
 

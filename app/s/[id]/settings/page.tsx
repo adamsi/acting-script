@@ -49,15 +49,18 @@ export default function Settings() {
     setProgress([0, 0]);
     const r = await ensureAudio(s, opts, (a, b) => setProgress([a, b]));
     setProgress(null);
-    setNote(r.failed ? t('recordingFailed') : t('saved'));
+    setNote(r.failed ? `${t('recordingFailed')} (${r.failed}): ${r.error}` : t('saved'));
   }
 
-  async function save(force = false) {
+  /** Saves the draft. Recordings are re-created only when asked for (recordAll). */
+  async function save(recordAll = false) {
     if (!draft) return;
     setSaving(true);
     setNote('');
     try {
-      await record(await persist(draft), { force });
+      const s = await persist(draft);
+      if (recordAll) await record(s, { force: true });
+      else setNote(t('saved'));
     } catch (e) {
       setNote(e instanceof Error ? e.message : String(e));
     } finally {
@@ -78,7 +81,7 @@ export default function Settings() {
       setBusyLine(saved.id);
       // A manual re-record gets the pronunciation check too (unless the user wrote the pronunciation).
       const r = await ensureAudio(s, { force: true, improve: s.language === 'he', lineIds: [saved.id] });
-      if (r.failed) throw new Error(t('recordingFailed'));
+      if (r.failed) throw new Error(`${t('recordingFailed')}: ${r.error}`);
       await playBlob(await apiBlob(`/lines/${saved.id}/audio`));
     } catch (e) {
       setNote(e instanceof Error ? e.message : String(e));

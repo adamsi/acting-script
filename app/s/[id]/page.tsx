@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api, ensureAudio, getPasskey, unlockAudio } from '@/lib/client';
+import { api, ensureAudio, getPasskey, spokenOf, unlockAudio } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
 import type { Script } from '@/lib/types';
 import Player from '@/components/Player';
@@ -52,21 +52,25 @@ export default function Scene() {
 
   const nameOf = useMemo(() => new Map(script?.characters.map((c) => [c.id, c.name])), [script]);
 
-  async function play(from: number) {
+  /** Starts the rehearsal with the recordings already stored. Never creates recordings. */
+  function play(from: number) {
     if (!script?.my_character_id) return;
-    unlockAudio(); // must happen inside the tap, before any await
+    unlockAudio(); // must happen inside the tap
     setWarn('');
-    let current = script;
-    const needs = script.lines.some((l) => l.character_id !== script.my_character_id && !l.fresh);
-    if (needs) {
-      setProgress([0, 0]);
-      const r = await ensureAudio(script, {}, (d, n) => setProgress([d, n]));
-      current = r.script;
-      setScript(current);
-      setProgress(null);
-      if (r.failed) setWarn(t('recordingFailed'));
-    }
-    setPlayFrom(Math.min(from, current.lines.length - 1));
+    setNote('');
+    setPlayFrom(Math.min(from, script.lines.length - 1));
+  }
+
+  /** Creates the missing / outdated recordings. Runs only when the user asks for it. */
+  async function record() {
+    if (!script) return;
+    setWarn('');
+    setNote('');
+    setProgress([0, 0]);
+    const r = await ensureAudio(script, {}, (d, n) => setProgress([d, n]));
+    setScript(r.script);
+    setProgress(null);
+    if (r.failed) setWarn(`${t('recordingFailed')} (${r.failed}): ${r.error}`);
   }
 
   async function improve() {
@@ -80,7 +84,7 @@ export default function Scene() {
     setProgress(null);
     setImproving(false);
     const unchecked = r.script.lines.some((l) => l.character_id !== r.script.my_character_id && l.fresh && !l.improved);
-    if (r.failed) setWarn(t('recordingFailed'));
+    if (r.failed) setWarn(`${t('recordingFailed')} (${r.failed}): ${r.error}`);
     else if (unchecked) setWarn(t('improveFailed'));
     if (!unchecked || r.fixed) setNote(`${t('improvedDone')} · ${r.fixed} ${t('improvedWords')}`);
   }
@@ -113,7 +117,11 @@ export default function Scene() {
 
   if (!script) return <><TopBar title="" back="/" /><Status error={error} onRetry={load} /></>;
 
+  const toRecord = script.my_character_id
+    ? script.lines.filter((l) => l.character_id !== script.my_character_id && !l.fresh && !!spokenOf(l)).length
+    : 0;
   const canImprove =
+    !toRecord &&
     script.language === 'he' &&
     !!script.my_character_id &&
     script.lines.some((l) => l.character_id !== script.my_character_id && !l.improved && !!l.text.replace(/\([^)]*\)/g, '').trim());
@@ -144,8 +152,18 @@ export default function Scene() {
             {t('continueFrom')} {resumeAt + 1}
           </button>
         )}
-        {warn && <p className="text-red-300">{warn}</p>}
+        {warn && <p className="text-red-300" dir="auto" role="alert">{warn}</p>}
         {note && <p className="text-other" role="status">✓ {note}</p>}
+        {toRecord > 0 && (
+          <div className="card flex flex-col gap-3 border-mine/60 p-4">
+            <p>
+              {toRecord} {t('needRecording')}
+            </p>
+            <button className="btn" onClick={record}>
+              🎙 {t('createRecordings')}
+            </button>
+          </div>
+        )}
         {canImprove && (
           <div className="card flex flex-col gap-3 p-4">
             <p className="text-dim">{t('improveHint')}</p>
