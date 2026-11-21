@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { api, draftFromParsed, newKey } from '@/lib/client';
-import { errorText, useI18n } from '@/lib/i18n';
+import { errorText, useI18n, useUploadLimits } from '@/lib/i18n';
 import type { Draft } from '@/lib/types';
 import type { WorksheetSummary } from '@/lib/worksheets';
 import { LinesEditor } from '@/components/Editor';
@@ -26,6 +26,7 @@ function draftFromWorksheet(w: { title: string; author: string; lines: { speaker
 
 export default function Chubbuck() {
   const { t, lang } = useI18n();
+  const uploadLimits = useUploadLimits();
   const [view, setView] = useState<View>('list');
   const [tables, setTables] = useState<WorksheetSummary[] | null>(null);
   const [listError, setListError] = useState('');
@@ -177,7 +178,7 @@ export default function Chubbuck() {
           <label className="card flex cursor-pointer flex-col items-center gap-4 p-10 text-center">
             <span className="text-6xl" aria-hidden>📄</span>
             <span className="text-xl text-dim">{t('uploadHint')}</span>
-            <span className="text-dim">{t('uploadLimits')}</span>
+            <span className="text-dim">{uploadLimits}</span>
             <span className="btn btn-primary text-xl">{t('chooseFile')}</span>
             <input
               type="file"

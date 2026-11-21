@@ -1,17 +1,30 @@
 import { PDFDocument } from 'pdf-lib';
 import { HttpError } from './errors';
 import { db } from './db';
-import type { Usage } from './limits-types';
+import type { ScriptLimits, Usage } from './limits-types';
 
-export type { Usage };
+export type { ScriptLimits, Usage };
 
 export const MAX_SCENES_PER_MONTH = 20;
 /** Analyses cost money even when the scene is never saved, so they are capped as well. */
 export const MAX_ANALYSES_PER_MONTH = 40;
 export const MAX_FILE_BYTES = 4 * 1024 * 1024;
-export const MAX_PAGES = 30;
-/** About 30 full pages of dialogue. Stops a single page crammed with a huge amount of text. */
-export const MAX_WORDS = 12_000;
+/** A full page of dialogue. The word limit stops a single page crammed with a huge amount of text. */
+const WORDS_PER_PAGE = 400;
+const limitsForPages = (maxPages: number): ScriptLimits => ({ maxPages, maxWords: maxPages * WORDS_PER_PAGE });
+/** Script size for everyone. */
+export const STANDARD_LIMITS = limitsForPages(10);
+/** Script size for the accounts listed in EXTENDED_LIMIT_EMAILS. */
+export const EXTENDED_LIMITS = limitsForPages(30);
+
+/**
+ * The script limits for an account. `extendedEmails` is a comma-separated list
+ * (the EXTENDED_LIMIT_EMAILS setting); only a verified email on that list gets the longer limit.
+ */
+export function scriptLimitsFor(verifiedEmail: string | null, extendedEmails: string | undefined): ScriptLimits {
+  const list = (extendedEmails || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  return verifiedEmail && list.includes(verifiedEmail.trim().toLowerCase()) ? EXTENDED_LIMITS : STANDARD_LIMITS;
+}
 
 export type UsageKind = 'create' | 'analyze';
 
@@ -25,12 +38,13 @@ async function count(userId: string, kind: UsageKind): Promise<number> {
   return row.n;
 }
 
-export async function getUsage(userId: string): Promise<Usage> {
+export async function getUsage(userId: string, limits: ScriptLimits): Promise<Usage> {
   const now = new Date();
   return {
     used: await count(userId, 'create'),
     limit: MAX_SCENES_PER_MONTH,
     resets: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString(),
+    ...limits,
   };
 }
 
@@ -56,8 +70,8 @@ export function assertFileSize(bytes: number) {
     throw new HttpError(413, 'file_too_large', `File is too large (max ${MAX_FILE_BYTES / 1024 / 1024}MB).`);
 }
 
-const tooLong = () =>
-  new HttpError(413, 'script_too_long', `Script is too long (max ${MAX_PAGES} pages or ${MAX_WORDS.toLocaleString('en-US')} words).`);
+const tooLong = (l: ScriptLimits) =>
+  new HttpError(413, 'script_too_long', `Script is too long (max ${l.maxPages} pages or ${l.maxWords.toLocaleString('en-US')} words).`);
 
 /**
  * Number of words in a text. Some PDFs lose the spaces between words when their text is
@@ -69,19 +83,19 @@ export function countWords(text: string): number {
   return Math.max(tokens, Math.ceil(letters / 5));
 }
 
-export function assertWordCount(text: string) {
-  if (countWords(text) > MAX_WORDS) throw tooLong();
+export function assertWordCount(text: string, limits: ScriptLimits) {
+  if (countWords(text) > limits.maxWords) throw tooLong(limits);
 }
 
 /** Rejects PDFs with too many pages or too much text (however few pages it is squeezed into). */
-export async function assertPdfSize(file: Buffer) {
+export async function assertPdfSize(file: Buffer, limits: ScriptLimits) {
   let pages: number;
   try {
     pages = (await PDFDocument.load(file, { ignoreEncryption: true, updateMetadata: false })).getPageCount();
   } catch {
     throw new HttpError(400, 'bad_file', 'This PDF could not be read.');
   }
-  if (pages > MAX_PAGES) throw tooLong();
+  if (pages > limits.maxPages) throw tooLong(limits);
   let text = '';
   try {
     const { extractText, getDocumentProxy } = await import('unpdf');
@@ -89,5 +103,5 @@ export async function assertPdfSize(file: Buffer) {
   } catch {
     // No readable text layer (e.g. a scan): the page limit above is what bounds it.
   }
-  assertWordCount(text);
+  assertWordCount(text, limits);
 }

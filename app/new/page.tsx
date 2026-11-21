@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, draftFromParsed, ensureAudio } from '@/lib/client';
-import { errorText, useI18n } from '@/lib/i18n';
+import { errorText, useI18n, useUploadLimits } from '@/lib/i18n';
 import type { Draft, Script, Voice } from '@/lib/types';
 import { CharactersEditor, LinesEditor, draftProblem } from '@/components/Editor';
 import { Page, ProgressCard, Stepper, TopBar } from '@/components/ui';
@@ -11,6 +11,7 @@ const MAX_BYTES = 4 * 1024 * 1024;
 
 export default function NewScene() {
   const { t } = useI18n();
+  const uploadLimits = useUploadLimits();
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [file, setFile] = useState<File | null>(null);
@@ -86,7 +87,7 @@ export default function NewScene() {
           <label className="card flex cursor-pointer flex-col items-center gap-4 p-10 text-center">
             <span className="text-6xl" aria-hidden>📄</span>
             <span className="text-xl text-dim">{t('uploadHint')}</span>
-            <span className="text-dim">{t('uploadLimits')}</span>
+            <span className="text-dim">{uploadLimits}</span>
             <span className="btn btn-primary text-xl">{t('chooseFile')}</span>
             <input
               type="file"

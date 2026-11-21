@@ -1,5 +1,6 @@
 import { json, route } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { getScriptLimits } from '@/lib/plan';
 import { getScript, saveScript } from '@/lib/store';
 
 type P = { id: string };
@@ -11,7 +12,7 @@ export const GET = route<P>(async (_req, { id }, userId) => {
 
 /** Full save from the editor. */
 export const PUT = route<P>(async (req, { id }, userId) => {
-  await saveScript(userId, id, await req.json());
+  await saveScript(userId, id, await req.json(), await getScriptLimits(userId));
   return json(await getScript(userId, id));
 });
 

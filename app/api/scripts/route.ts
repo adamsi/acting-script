@@ -1,5 +1,6 @@
 import { json, route } from '@/lib/auth';
 import { assertCanCreate, assertFileSize } from '@/lib/limits';
+import { getScriptLimits } from '@/lib/plan';
 import { listScripts, saveScript, type Upload } from '@/lib/store';
 
 export const GET = route(async (_req, _params, userId) => json(await listScripts(userId)));
@@ -14,5 +15,5 @@ export const POST = route(async (req, _params, userId) => {
     assertFileSize(file.size);
     upload = { data: Buffer.from(await file.arrayBuffer()), name: file.name, mime: file.type };
   }
-  return json({ id: await saveScript(userId, null, draft, upload) });
+  return json({ id: await saveScript(userId, null, draft, await getScriptLimits(userId), upload) });
 });

@@ -38,10 +38,10 @@ const dict = {
   limitReached: ['הגעת למגבלה החודשית של סצנות חדשות', 'You have reached this month\'s limit of new scenes'],
   limitResets: ['המגבלה מתאפסת ב־', 'The limit resets on '],
   errMonthlyLimit: ['הגעת למגבלה החודשית (20 סצנות חדשות בחודש)', 'Monthly limit reached (20 new scenes per month)'],
-  errTooLong: ['הטקסט ארוך מדי (עד 30 עמודים או 12,000 מילים)', 'The script is too long (max 30 pages or 12,000 words)'],
+  errTooLong: ['הטקסט ארוך מדי', 'The script is too long'],
   errTooMany: ['יש יותר מדי טבלאות שמורות. מחק טבלה ישנה כדי ליצור חדשה.', 'Too many saved worksheets. Delete an old one to create a new one.'],
   errBadFile: ['לא ניתן לקרוא את הקובץ', 'This file could not be read'],
-  uploadLimits: ['עד 30 עמודים, 12,000 מילים ו-4MB', 'Up to 30 pages, 12,000 words and 4MB'],
+  uploadLimits: ['עד {pages} עמודים, {words} מילים ו-4MB', 'Up to {pages} pages, {words} words and 4MB'],
   myScenes: ['הסצנות שלי', 'My scenes'],
   noScenes: ['עדיין אין סצנות. העלה קובץ כדי להתחיל.', 'No scenes yet. Upload a file to start.'],
   newScene: ['סצנה חדשה', 'New scene'],
@@ -161,6 +161,19 @@ export function I18nProvider({ children, initialLang }: { children: ReactNode; i
   );
   const t = useCallback((k: Key) => dict[k][lang === 'he' ? 0 : 1], [lang]);
   return <Ctx.Provider value={{ lang, t, setLang }}>{children}</Ctx.Provider>;
+}
+
+/** Hook: this account's upload limits as a sentence (e.g. "Up to 10 pages, 4,000 words and 4MB"). */
+export function useUploadLimits(): string {
+  const { t } = useI18n();
+  const [limits, setLimits] = useState<{ maxPages: number; maxWords: number } | null>(null);
+  useEffect(() => {
+    fetch('/api/usage')
+      .then((r) => (r.ok ? r.json() : null))
+      .then(setLimits, () => {});
+  }, []);
+  if (!limits) return '';
+  return t('uploadLimits').replace('{pages}', String(limits.maxPages)).replace('{words}', limits.maxWords.toLocaleString('en-US'));
 }
 
 /** Text for an API error: translated when the server sent a known code. */

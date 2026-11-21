@@ -114,7 +114,7 @@ describe('pronunciation helpers', () => {
 });
 
 import { PDFDocument, StandardFonts } from 'pdf-lib';
-import { assertFileSize, assertPdfSize, assertWordCount, countWords, MAX_FILE_BYTES, MAX_PAGES, MAX_WORDS } from '../lib/limits';
+import { assertFileSize, assertPdfSize, assertWordCount, countWords, EXTENDED_LIMITS, MAX_FILE_BYTES, scriptLimitsFor, STANDARD_LIMITS } from '../lib/limits';
 
 describe('upload limits', () => {
   const pdf = async (pages: number, wordsPerPage = 0) => {
@@ -129,21 +129,35 @@ describe('upload limits', () => {
     return Buffer.from(await d.save());
   };
   it('accepts a script of exactly the page limit and rejects one page more', async () => {
-    await expect(assertPdfSize(await pdf(MAX_PAGES))).resolves.toBeUndefined();
-    await expect(assertPdfSize(await pdf(MAX_PAGES + 1))).rejects.toMatchObject({ code: 'script_too_long', status: 413 });
+    await expect(assertPdfSize(await pdf(10), STANDARD_LIMITS)).resolves.toBeUndefined();
+    await expect(assertPdfSize(await pdf(11), STANDARD_LIMITS)).rejects.toMatchObject({ code: 'script_too_long', status: 413 });
+    await expect(assertPdfSize(await pdf(30), EXTENDED_LIMITS)).resolves.toBeUndefined();
+    await expect(assertPdfSize(await pdf(31), EXTENDED_LIMITS)).rejects.toMatchObject({ code: 'script_too_long' });
   });
   it('rejects a single page crammed with too many words', async () => {
-    await expect(assertPdfSize(await pdf(1, 3000))).resolves.toBeUndefined();
-    await expect(assertPdfSize(await pdf(1, MAX_WORDS + 2000))).rejects.toMatchObject({ code: 'script_too_long' });
+    await expect(assertPdfSize(await pdf(1, 3000), STANDARD_LIMITS)).resolves.toBeUndefined();
+    await expect(assertPdfSize(await pdf(1, 6000), STANDARD_LIMITS)).rejects.toMatchObject({ code: 'script_too_long' });
+    await expect(assertPdfSize(await pdf(1, 6000), EXTENDED_LIMITS)).resolves.toBeUndefined();
   }, 30000);
   it('rejects an unreadable PDF', async () => {
-    await expect(assertPdfSize(Buffer.from('nope'))).rejects.toMatchObject({ code: 'bad_file' });
+    await expect(assertPdfSize(Buffer.from('nope'), STANDARD_LIMITS)).rejects.toMatchObject({ code: 'bad_file' });
   });
   it('counts words, also when the spaces between them were lost', () => {
     expect(countWords('שלום לך עולם')).toBe(3);
     expect(countWords('א'.repeat(500))).toBe(100);
-    expect(() => assertWordCount(Array(MAX_WORDS).fill('מה').join(' '))).not.toThrow();
-    expect(() => assertWordCount(Array(MAX_WORDS + 1).fill('מה').join(' '))).toThrow();
+    expect(() => assertWordCount(Array(4000).fill('מה').join(' '), STANDARD_LIMITS)).not.toThrow();
+    expect(() => assertWordCount(Array(4001).fill('מה').join(' '), STANDARD_LIMITS)).toThrow();
+  });
+  it('gives the longer limit only to a verified email on the list', () => {
+    const list = 'Owner@Example.com, second@example.com';
+    expect(STANDARD_LIMITS).toEqual({ maxPages: 10, maxWords: 4000 });
+    expect(EXTENDED_LIMITS).toEqual({ maxPages: 30, maxWords: 12000 });
+    expect(scriptLimitsFor('owner@example.com', list)).toBe(EXTENDED_LIMITS);
+    expect(scriptLimitsFor(' SECOND@example.com ', list)).toBe(EXTENDED_LIMITS);
+    expect(scriptLimitsFor('other@example.com', list)).toBe(STANDARD_LIMITS);
+    expect(scriptLimitsFor(null, list)).toBe(STANDARD_LIMITS); // no verified email
+    expect(scriptLimitsFor('owner@example.com', undefined)).toBe(STANDARD_LIMITS); // setting not configured
+    expect(scriptLimitsFor('', ',,')).toBe(STANDARD_LIMITS);
   });
   it('limits file size', () => {
     expect(() => assertFileSize(MAX_FILE_BYTES)).not.toThrow();

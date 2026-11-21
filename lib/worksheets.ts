@@ -1,6 +1,6 @@
 import { db } from './db';
 import { HttpError } from './errors';
-import { assertWordCount } from './limits';
+import { assertWordCount, type ScriptLimits } from './limits';
 import type { ChubbuckInput } from './chubbuck';
 
 /** Saved worksheets a user can keep. */
@@ -15,7 +15,7 @@ export interface WorksheetSummary {
 }
 
 /** Cleans a worksheet sent by the browser and applies the size limits. */
-export function cleanWorksheet(body: { title?: unknown; author?: unknown; lines?: unknown }): ChubbuckInput {
+export function cleanWorksheet(body: { title?: unknown; author?: unknown; lines?: unknown }, limits: ScriptLimits): ChubbuckInput {
   const lines = (Array.isArray(body.lines) ? body.lines : [])
     .map((l: { speaker?: unknown; text?: unknown }) => ({
       speaker: String(l?.speaker ?? '').trim().slice(0, 100),
@@ -23,7 +23,7 @@ export function cleanWorksheet(body: { title?: unknown; author?: unknown; lines?
     }))
     .filter((l) => l.text);
   if (!lines.length) throw new HttpError(400, 'empty', 'The worksheet has no lines.');
-  assertWordCount(lines.map((l) => l.text).join(' '));
+  assertWordCount(lines.map((l) => l.text).join(' '), limits);
   return {
     title: String(body.title ?? '').trim().slice(0, 200),
     author: String(body.author ?? '').trim().slice(0, 200),

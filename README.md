@@ -46,7 +46,7 @@ created it; nobody else can read, change or play it.
 | --- | --- |
 | New scenes per user | 20 per calendar month (UTC). Deleting a scene does not give one back. |
 | Upload size | 4MB |
-| Script length | 30 pages (PDF) and 12,000 words (any file, however few pages). Longer scripts are rejected before any analysis; the word limit also applies to edited text when it is saved. |
+| Script length | 10 pages (PDF) and 4,000 words (any file, however few pages). Accounts listed in `EXTENDED_LIMIT_EMAILS` get 30 pages and 12,000 words. Longer scripts are rejected before any analysis; the word limit also applies to edited text when it is saved. |
 | Saved worksheets | 100 per user |
 
 ## Environment variables
@@ -58,6 +58,7 @@ created it; nobody else can read, change or play it.
 | `DB_URL` | Supabase **Transaction pooler** connection string (port 6543). The direct `db.<ref>.supabase.co:5432` string is IPv6-only and does not work on Vercel. |
 | `OPENAI_API_KEY` | Used to analyze uploaded scripts and to check Hebrew pronunciation. |
 | `INWORLD_API_KEY` | The Base64 "Basic" key from the Inworld portal. |
+| `EXTENDED_LIMIT_EMAILS` | Optional. Comma-separated emails whose accounts get the 30-page limit. The email must be verified in Clerk. |
 | `OPENAI_MODEL` | Optional, default `gpt-5.4`. |
 | `INWORLD_MODEL` | Optional, default `inworld-tts-1.5-max`. |
 | `PRONUNCIATION_EFFORT` | Optional, OpenAI reasoning effort for the pronunciation check, default `medium`. |
