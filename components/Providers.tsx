@@ -1,40 +1,19 @@
 'use client';
 import { useAuth } from '@clerk/nextjs';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { I18nProvider, useI18n, type Lang } from '@/lib/i18n';
-import { LangMenu } from './LangMenu';
+import { I18nProvider, type Lang } from '@/lib/i18n';
+import Landing from './Landing';
 
 /** Signed-out visitors see the welcome screen; the app itself needs an account. */
 function AuthGate({ children }: { children: ReactNode }) {
-  const { t } = useI18n();
   const { isLoaded, isSignedIn } = useAuth();
   const path = usePathname();
 
   if (path.startsWith('/sign-in') || path.startsWith('/sign-up')) return <>{children}</>;
   if (!isLoaded) return null;
   if (isSignedIn) return <>{children}</>;
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-8 p-6">
-      <div className="flex justify-end">
-        <LangMenu />
-      </div>
-      <div className="flex flex-1 flex-col justify-center gap-8">
-        <h1 className="text-center text-5xl font-bold" dir="ltr">
-          {t('appName')}
-        </h1>
-        <div className="flex flex-col gap-3">
-          <Link href="/sign-up" className="btn btn-primary min-h-16 text-2xl">
-            {t('signUp')}
-          </Link>
-          <Link href="/sign-in" className="btn text-lg">
-            {t('haveAccount')}
-          </Link>
-        </div>
-      </div>
-    </main>
-  );
+  return <Landing />;
 }
 
 export default function Providers({ children, initialLang }: { children: ReactNode; initialLang: Lang }) {

@@ -19,7 +19,9 @@
     "postgres": "^3.4.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "unpdf": "^1.9.1"
+    "three": "^0.134.0",
+    "unpdf": "^1.9.1",
+    "vanta": "^0.5.24"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
