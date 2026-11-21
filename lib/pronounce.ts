@@ -11,7 +11,11 @@ export interface Fix {
   ipa: string;
 }
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
+/**
+ * Pronunciation check. Kept on gpt-5.4 by default: on a 3-page scene gpt-5.4-mini cost about half but
+ * missed 10 of the 24 corrections and got two verb stresses wrong; nano invented corrections.
+ */
+const MODEL = process.env.PRONUNCIATION_MODEL || 'gpt-5.4';
 export const PRONUNCIATION_FIX = process.env.PRONUNCIATION_FIX !== 'off';
 
 const HEB = '֐-׿';
@@ -113,6 +117,7 @@ export async function findFixes(tokens: SpokenToken[], context: string): Promise
     });
     if (!res.ok) throw new Error(`OpenAI ${res.status}: ${(await res.text()).slice(0, 200)}`);
     const data = await res.json();
+    console.log('openai usage (pronunciation)', MODEL, EFFORT, JSON.stringify(data.usage));
     let out = '';
     for (const item of data.output ?? [])
       for (const c of item.content ?? []) if (c.type === 'output_text') out += c.text;

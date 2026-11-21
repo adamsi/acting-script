@@ -11,7 +11,11 @@ export interface Parsed {
   lines: { speaker: string; text: string }[];
 }
 
-const MODEL = process.env.OPENAI_MODEL || 'gpt-5.4';
+/**
+ * Script analysis. Measured on a 3-page scene: gpt-5.4-mini is as accurate as gpt-5.4 here at about a
+ * third of the price and 3x the speed; gpt-5.4-nano splits turns incorrectly, so do not use it.
+ */
+const MODEL = process.env.OPENAI_MODEL || 'gpt-5.4-mini';
 
 const SCHEMA = {
   type: 'object',
@@ -113,6 +117,7 @@ export async function parseScript(
   });
   if (!res.ok) throw new Error(`OpenAI failed (${res.status}): ${(await res.text()).slice(0, 300)}`);
   const data = await res.json();
+  console.log('openai usage (script analysis)', MODEL, JSON.stringify(data.usage));
   let out = '';
   for (const item of data.output ?? [])
     for (const c of item.content ?? []) if (c.type === 'output_text') out += c.text;
