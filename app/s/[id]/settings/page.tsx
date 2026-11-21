@@ -93,7 +93,7 @@ export default function Settings() {
   async function remove() {
     if (!confirm(t('deleteSceneConfirm'))) return;
     await api(`/scripts/${id}`, { method: 'DELETE' });
-    router.replace('/');
+    router.replace('/learn');
   }
 
   if (!draft) return <><TopBar title={t('settings')} back={`/s/${id}`} /><Status error={error} onRetry={load} /></>;

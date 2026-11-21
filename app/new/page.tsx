@@ -70,7 +70,7 @@ export default function NewScene() {
 
   return (
     <>
-      <TopBar title={t('newScene')} back="/" />
+      <TopBar title={t('newScene')} back="/learn" />
       <Page>
         <Stepper
           steps={[t('stepUpload'), t('stepCharacters'), t('stepLines'), t('stepRecord')]}

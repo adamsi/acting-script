@@ -39,8 +39,9 @@ export async function assertCanCreate(userId: string) {
     throw new HttpError(429, 'monthly_limit', `Monthly limit reached: ${MAX_SCENES_PER_MONTH} new scenes per month.`);
 }
 
-export async function assertCanAnalyze(userId: string) {
-  await assertCanCreate(userId);
+/** `forScene`: the upload is for a new rehearsal scene, so the scene limit applies too. */
+export async function assertCanAnalyze(userId: string, forScene = true) {
+  if (forScene) await assertCanCreate(userId);
   if ((await count(userId, 'analyze')) >= MAX_ANALYSES_PER_MONTH)
     throw new HttpError(429, 'monthly_limit', 'Monthly limit reached: too many script uploads this month.');
 }

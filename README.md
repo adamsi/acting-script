@@ -1,11 +1,17 @@
-# acting-script — חזרה על טקסט
+# Acting Tools
 
-A mobile-first, Hebrew-first (English switchable) app for rehearsing a scene.
-Upload a script (PDF / Word), choose who you are, and the app speaks every other
-character with a fitting voice, stops on your lines, shows them big on screen and
-continues only when you tap the screen (or press Enter).
+A mobile-first, Hebrew-first (English switchable) set of tools for actors. After signing in
+there are two tools:
 
-## How it works
+- **לימוד טקסט (Learn a script)** — upload a scene, choose who you are, and the app speaks every
+  other character with a fitting voice, stops on your lines and continues when you tap.
+- **טבלה בשיטת צ׳באק (Chubbuck worksheet)** — upload a scene, confirm the text, and download a
+  Word file: a framed box of general questions (overall objective, substitution, scene objective,
+  obstacles, moment before, given circumstances, place and fourth wall) and a table with one row
+  per speech and the columns text / actions / obstacles / doings / inner dialogue. Nothing from
+  this tool is stored.
+
+## How script learning works
 
 1. **Upload** a PDF / `.docx` / `.txt`. OpenAI extracts the title, characters (with gender) and every line in order. Stage directions stay in `(parentheses)` — shown, never spoken.
 2. **Confirm** the characters (name, gender, voice with preview), choose **who you are**, then confirm the lines. Nothing is saved before you confirm.

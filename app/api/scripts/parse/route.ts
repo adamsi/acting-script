@@ -5,7 +5,8 @@ import { parseScript } from '@/lib/parse';
 export const maxDuration = 300;
 
 export const POST = route(async (req, _params, userId) => {
-  await assertCanAnalyze(userId);
+  // ?for=table: the script is for a Chubbuck worksheet, not a new rehearsal scene.
+  await assertCanAnalyze(userId, new URL(req.url).searchParams.get('for') !== 'table');
   const form = await req.formData();
   const file = form.get('file');
   if (!(file instanceof File)) return json({ error: 'file is required' }, 400);

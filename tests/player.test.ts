@@ -136,3 +136,20 @@ describe('upload limits', () => {
     expect(() => assertFileSize(MAX_FILE_BYTES + 1)).toThrow();
   });
 });
+
+import { buildChubbuckDocx } from '../lib/chubbuck';
+
+describe('Chubbuck worksheet', () => {
+  it('builds a Word file with one table row per speech', async () => {
+    const file = await buildChubbuckDocx({
+      title: 'סצנה',
+      author: '',
+      lines: [
+        { speaker: 'דנה', text: 'שלום' },
+        { speaker: 'יוסי', text: 'היי' },
+      ],
+    });
+    expect(file.subarray(0, 2).toString()).toBe('PK'); // a .docx is a zip archive
+    expect(file.length).toBeGreaterThan(2000);
+  });
+});

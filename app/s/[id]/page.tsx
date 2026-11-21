@@ -94,7 +94,7 @@ export default function Scene() {
     if (!confirm(t('deleteSceneConfirm'))) return;
     try {
       await api(`/scripts/${id}`, { method: 'DELETE' });
-      router.replace('/');
+      router.replace('/learn');
     } catch (e) {
       setWarn(e instanceof Error ? e.message : String(e));
     }
@@ -109,13 +109,13 @@ export default function Scene() {
     if (!confirm(t('deleteSceneConfirm'))) return;
     try {
       await api(`/scripts/${id}`, { method: 'DELETE' });
-      router.replace('/');
+      router.replace('/learn');
     } catch (e) {
       setWarn(e instanceof Error ? e.message : String(e));
     }
   }
 
-  if (!script) return <><TopBar title="" back="/" /><Status error={error} onRetry={load} /></>;
+  if (!script) return <><TopBar title="" back="/learn" /><Status error={error} onRetry={load} /></>;
 
   const toRecord = script.my_character_id
     ? script.lines.filter((l) => l.character_id !== script.my_character_id && !l.fresh && !!spokenOf(l)).length
@@ -129,7 +129,7 @@ export default function Scene() {
 
   return (
     <>
-      <TopBar title={script.title} back="/" />
+      <TopBar title={script.title} back="/learn" />
       <Page>
         {script.author && <p className="text-dim" dir="auto">{script.author}</p>}
 

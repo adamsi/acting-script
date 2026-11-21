@@ -10,8 +10,8 @@ import './globals.css';
 const heebo = Heebo({ subsets: ['hebrew', 'latin'], variable: '--font-heebo' });
 
 export const metadata: Metadata = {
-  title: 'חזרה על טקסט',
-  description: 'Rehearse your lines: the app reads the other characters and waits for you.',
+  title: 'Acting Tools',
+  description: 'Tools for actors: learn a script with the other characters read aloud, and build a Chubbuck worksheet.',
 };
 export const viewport: Viewport = {
   width: 'device-width',
