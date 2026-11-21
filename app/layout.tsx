@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from 'next';
+import { ClerkProvider } from '@clerk/nextjs';
+import { enUS, heIL } from '@clerk/localizations';
+import { dark } from '@clerk/ui/themes';
 import { Heebo } from 'next/font/google';
+import { cookies } from 'next/headers';
 import Providers from '@/components/Providers';
 import './globals.css';
 
@@ -16,11 +20,22 @@ export const viewport: Viewport = {
   themeColor: '#0e1014',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Hebrew unless the user chose English (the choice is kept in a cookie so the server knows it).
+  const lang = (await cookies()).get('lang')?.value === 'en' ? 'en' : 'he';
   return (
-    <html lang="he" dir="rtl" className={heebo.variable}>
+    <html lang={lang} dir={lang === 'he' ? 'rtl' : 'ltr'} className={heebo.variable}>
       <body className="font-sans antialiased">
-        <Providers>{children}</Providers>
+        <ClerkProvider
+          dynamic
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
+          afterSignOutUrl="/"
+          localization={lang === 'he' ? heIL : enUS}
+          appearance={{ theme: dark, variables: { colorPrimary: '#fbbf24', colorPrimaryForeground: '#1a1300' } }}
+        >
+          <Providers initialLang={lang}>{children}</Providers>
+        </ClerkProvider>
       </body>
     </html>
   );

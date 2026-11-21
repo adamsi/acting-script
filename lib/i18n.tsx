@@ -1,13 +1,24 @@
 'use client';
+import { useRouter } from 'next/navigation';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 
 export type Lang = 'he' | 'en';
 
 const dict = {
   appName: ['חזרה על טקסט', 'Script Rehearsal'],
-  passkeyTitle: ['הזן קוד כניסה', 'Enter passkey'],
-  passkeyWrong: ['קוד שגוי', 'Wrong passkey'],
-  enter: ['כניסה', 'Enter'],
+  welcome: ['מתרגלים סצנה לבד: האפליקציה מקריאה את שאר הדמויות ומחכה לך בתור שלך.', 'Rehearse a scene on your own: the app reads the other characters and waits for you on your lines.'],
+  welcome1: ['מעלים קובץ PDF או Word של הסצנה', 'Upload a PDF or Word file of the scene'],
+  welcome2: ['בוחרים איזו דמות אתם', 'Choose which character you are'],
+  welcome3: ['שאר הדמויות מדברות בקול, ואתם עונים', 'The other characters speak aloud, and you answer'],
+  signUp: ['הרשמה', 'Sign up'],
+  haveAccount: ['כבר יש לי חשבון · כניסה', 'I already have an account · Sign in'],
+  usage: ['סצנות חדשות החודש', 'new scenes this month'],
+  limitReached: ['הגעת למגבלה החודשית של סצנות חדשות', 'You have reached this month\'s limit of new scenes'],
+  limitResets: ['המגבלה מתאפסת ב־', 'The limit resets on '],
+  errMonthlyLimit: ['הגעת למגבלה החודשית (20 סצנות חדשות בחודש)', 'Monthly limit reached (20 new scenes per month)'],
+  errTooLong: ['הטקסט ארוך מדי (עד 30 עמודים)', 'The script is too long (max 30 pages)'],
+  errBadFile: ['לא ניתן לקרוא את הקובץ', 'This file could not be read'],
+  uploadLimits: ['עד 30 עמודים, עד 4MB', 'Up to 30 pages, up to 4MB'],
   myScenes: ['הסצנות שלי', 'My scenes'],
   noScenes: ['עדיין אין סצנות. העלה קובץ כדי להתחיל.', 'No scenes yet. Upload a file to start.'],
   newScene: ['סצנה חדשה', 'New scene'],
@@ -109,25 +120,38 @@ const Ctx = createContext<{ lang: Lang; t: (k: Key) => string; setLang: (l: Lang
   setLang: () => {},
 });
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>('he');
-  useEffect(() => {
-    try {
-      if (localStorage.getItem('lang') === 'en') setLangState('en');
-    } catch {}
-  }, []);
+export function I18nProvider({ children, initialLang }: { children: ReactNode; initialLang: Lang }) {
+  const router = useRouter();
+  const [lang, setLangState] = useState<Lang>(initialLang);
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'he' ? 'rtl' : 'ltr';
   }, [lang]);
-  const setLang = useCallback((l: Lang) => {
-    setLangState(l);
-    try {
-      localStorage.setItem('lang', l);
-    } catch {}
-  }, []);
+  const setLang = useCallback(
+    (l: Lang) => {
+      setLangState(l);
+      // A cookie, so the server renders the right language and direction (and Clerk's forms follow).
+      document.cookie = `lang=${l}; path=/; max-age=31536000; samesite=lax`;
+      router.refresh();
+    },
+    [router]
+  );
   const t = useCallback((k: Key) => dict[k][lang === 'he' ? 0 : 1], [lang]);
   return <Ctx.Provider value={{ lang, t, setLang }}>{children}</Ctx.Provider>;
+}
+
+/** Text for an API error: translated when the server sent a known code. */
+export function errorText(e: unknown, t: (k: Key) => string): string {
+  const code = (e as { code?: string })?.code;
+  const known: Record<string, Key> = {
+    monthly_limit: 'errMonthlyLimit',
+    file_too_large: 'tooBig',
+    script_too_long: 'errTooLong',
+    bad_file: 'errBadFile',
+    unsupported: 'unsupported',
+  };
+  if (code && known[code]) return t(known[code]);
+  return e instanceof Error ? e.message : String(e);
 }
 
 export const useI18n = () => useContext(Ctx);

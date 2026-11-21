@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api, draftFromParsed, ensureAudio } from '@/lib/client';
-import { useI18n } from '@/lib/i18n';
+import { errorText, useI18n } from '@/lib/i18n';
 import type { Draft, Script, Voice } from '@/lib/types';
 import { CharactersEditor, LinesEditor, draftProblem } from '@/components/Editor';
 import { Page, ProgressCard, Stepper, TopBar } from '@/components/ui';
@@ -41,7 +41,7 @@ export default function NewScene() {
       setDraftState(draftFromParsed(parsed, v));
       setStep(1);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e, t));
     } finally {
       setBusy('');
     }
@@ -61,7 +61,7 @@ export default function NewScene() {
       await ensureAudio(script, {}, (d, n) => setProgress([d, n]));
       router.replace(`/s/${id}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e, t));
       setBusy('');
     }
   }
@@ -86,6 +86,7 @@ export default function NewScene() {
           <label className="card flex cursor-pointer flex-col items-center gap-4 p-10 text-center">
             <span className="text-6xl" aria-hidden>📄</span>
             <span className="text-xl text-dim">{t('uploadHint')}</span>
+            <span className="text-dim">{t('uploadLimits')}</span>
             <span className="btn btn-primary text-xl">{t('chooseFile')}</span>
             <input
               type="file"

@@ -112,3 +112,27 @@ describe('pronunciation helpers', () => {
     expect(applyFixes(tokens, [{ index: 5, word: 'במכבסה', ipa: 'bamixbasˈa' }])).toBe('אתה עובד /bamixbasˈa/?');
   });
 });
+
+import { PDFDocument } from 'pdf-lib';
+import { assertFileSize, assertPdfPages, assertTextLength, MAX_CHARS, MAX_FILE_BYTES, MAX_PAGES } from '../lib/limits';
+
+describe('upload limits', () => {
+  const pdf = async (pages: number) => {
+    const d = await PDFDocument.create();
+    for (let i = 0; i < pages; i++) d.addPage([200, 200]);
+    return Buffer.from(await d.save());
+  };
+  it('accepts a script of exactly the page limit and rejects one page more', async () => {
+    await expect(assertPdfPages(await pdf(MAX_PAGES))).resolves.toBeUndefined();
+    await expect(assertPdfPages(await pdf(MAX_PAGES + 1))).rejects.toMatchObject({ code: 'script_too_long', status: 413 });
+  });
+  it('rejects an unreadable PDF', async () => {
+    await expect(assertPdfPages(Buffer.from('nope'))).rejects.toMatchObject({ code: 'bad_file' });
+  });
+  it('limits text length and file size', () => {
+    expect(() => assertTextLength('א'.repeat(MAX_CHARS))).not.toThrow();
+    expect(() => assertTextLength('א'.repeat(MAX_CHARS + 1))).toThrow();
+    expect(() => assertFileSize(MAX_FILE_BYTES)).not.toThrow();
+    expect(() => assertFileSize(MAX_FILE_BYTES + 1)).toThrow();
+  });
+});

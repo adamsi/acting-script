@@ -1,4 +1,6 @@
 import mammoth from 'mammoth';
+import { HttpError } from './errors';
+import { assertPdfPages, assertTextLength } from './limits';
 import type { Gender } from './types';
 
 export interface Parsed {
@@ -58,26 +60,45 @@ Rules:
 - gender: infer from the name, grammar (Hebrew verb/adjective gender) and context; use "unknown" only if truly unclear.
 - description: a very short (max 8 words) note about the character in the document's language, or "".`;
 
-export async function parseScript(file: Buffer, name: string, mime: string): Promise<Parsed> {
+/**
+ * Analyzes an uploaded script. Scripts longer than the page limit are rejected first;
+ * `onAnalyze` runs just before the (paid) analysis request.
+ */
+export async function parseScript(
+  file: Buffer,
+  name: string,
+  mime: string,
+  onAnalyze?: () => Promise<void>
+): Promise<Parsed> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error('OPENAI_API_KEY is not configured');
   const lower = name.toLowerCase();
   const content: unknown[] = [];
   if (lower.endsWith('.pdf') || mime === 'application/pdf') {
+    await assertPdfPages(file);
     content.push({
       type: 'input_file',
       filename: 'script.pdf',
       file_data: `data:application/pdf;base64,${file.toString('base64')}`,
     });
   } else if (lower.endsWith('.docx')) {
-    const { value } = await mammoth.convertToHtml({ buffer: file });
+    let value: string;
+    try {
+      assertTextLength((await mammoth.extractRawText({ buffer: file })).value);
+      value = (await mammoth.convertToHtml({ buffer: file })).value;
+    } catch (e) {
+      if (e instanceof HttpError) throw e;
+      throw new HttpError(400, 'bad_file', 'This Word file could not be read.');
+    }
     content.push({ type: 'input_text', text: `Document converted to HTML (bold preserved):\n\n${value}` });
   } else if (lower.endsWith('.txt') || mime.startsWith('text/')) {
+    assertTextLength(file.toString('utf8'));
     content.push({ type: 'input_text', text: file.toString('utf8') });
   } else {
-    throw new Error('Unsupported file type. Upload a PDF, Word (.docx) or text file.');
+    throw new HttpError(400, 'unsupported', 'Unsupported file type. Upload a PDF, Word (.docx) or text file.');
   }
   content.push({ type: 'input_text', text: 'Extract the scene from this document.' });
+  await onAnalyze?.();
 
   const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',

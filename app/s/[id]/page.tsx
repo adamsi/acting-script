@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api, ensureAudio, getPasskey, spokenOf, unlockAudio } from '@/lib/client';
+import { api, ensureAudio, spokenOf, unlockAudio } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
 import type { Script } from '@/lib/types';
 import Player from '@/components/Player';
@@ -195,7 +195,7 @@ export default function Scene() {
             ⚙ {t('settings')}
           </Link>
           {script.original_name && (
-            <a className="btn flex-1" target="_blank" rel="noreferrer" href={`/api/scripts/${id}/original?passkey=${encodeURIComponent(getPasskey())}`}>
+            <a className="btn flex-1" target="_blank" rel="noreferrer" href={`/api/scripts/${id}/original`}>
               📄 {t('originalFile')}
             </a>
           )}

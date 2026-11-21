@@ -11,13 +11,15 @@ type P = { id: string };
  * Creates the recording for one line (or re-creates it with { force: true }).
  * { improve: true } also checks the Hebrew pronunciation and corrects mispronounced words (slow).
  */
-export const POST = route<P>(async (req, { id }) => {
+export const POST = route<P>(async (req, { id }, userId) => {
   const { force, improve } = await req.json().catch(() => ({ force: false, improve: false }));
   const sql = await db();
   const [line] = await sql`
     select l.text, l.spoken_text, l.audio_hash, l.audio is not null as has_audio,
            l.audio_timings, l.audio_improved, l.script_id, l.idx, c.voice_id, c.name, c.gender
-    from lines l join characters c on c.id = l.character_id where l.id = ${id}`;
+    from lines l join characters c on c.id = l.character_id
+    join scripts s on s.id = l.script_id
+    where l.id = ${id} and s.user_id = ${userId}`;
   if (!line) return json({ error: 'not found' }, 404);
   const spoken = spokenOf(line as never);
   const hash = audioHash(spoken, line.voice_id);
@@ -48,9 +50,11 @@ export const POST = route<P>(async (req, { id }) => {
   return json({ has_audio: true, fresh: true, improved: checked || custom, hash, timings, fixes });
 });
 
-export const GET = route<P>(async (_req, { id }) => {
+export const GET = route<P>(async (_req, { id }, userId) => {
   const sql = await db();
-  const [row] = await sql`select audio from lines where id = ${id}`;
+  const [row] = await sql`
+    select l.audio from lines l join scripts s on s.id = l.script_id
+    where l.id = ${id} and s.user_id = ${userId}`;
   if (!row?.audio) return json({ error: 'not found' }, 404);
   return new Response(new Uint8Array(row.audio), {
     headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'private, no-store' },

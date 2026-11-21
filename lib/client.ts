@@ -2,38 +2,16 @@
 import { spokenText } from './text';
 import type { Draft, DraftCharacter, Gender, Line, Script, Voice } from './types';
 
-// ---------- passkey + API ----------
+// ---------- API ----------
 
-const KEY = 'passkey';
-export const AUTH_EVENT = 'acting-auth-failed';
-
-export function getPasskey(): string {
-  try {
-    return localStorage.getItem(KEY) || '';
-  } catch {
-    return '';
-  }
-}
-export function setPasskey(v: string) {
-  try {
-    localStorage.setItem(KEY, v);
-  } catch {}
-}
-
-export async function checkPasskey(candidate: string): Promise<boolean> {
-  const res = await fetch('/api/auth/check', { method: 'POST', headers: { 'x-passkey': candidate } });
-  return res.ok;
-}
-
+/** Calls the app's API. The signed-in user is identified by Clerk's session cookie. */
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
-  headers.set('x-passkey', getPasskey());
   if (typeof init.body === 'string') headers.set('Content-Type', 'application/json');
   const res = await fetch(`/api${path}`, { ...init, headers });
-  if (res.status === 401) window.dispatchEvent(new Event(AUTH_EVENT));
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Request failed (${res.status})`);
+    throw Object.assign(new Error(body.error || `Request failed (${res.status})`), { code: body.code, status: res.status });
   }
   return res;
 }

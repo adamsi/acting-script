@@ -1,20 +1,9 @@
 'use client';
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
+import { UserButton } from '@clerk/nextjs';
 import { useI18n } from '@/lib/i18n';
-
-export function LangToggle() {
-  const { lang, setLang } = useI18n();
-  return (
-    <button
-      className="btn min-h-11 px-3 text-base"
-      onClick={() => setLang(lang === 'he' ? 'en' : 'he')}
-      aria-label="Switch language"
-    >
-      {lang === 'he' ? 'English' : 'עברית'}
-    </button>
-  );
-}
+import { LangMenu } from './LangMenu';
 
 export function TopBar({ title, back, right }: { title: string; back?: string; right?: ReactNode }) {
   const { t, lang } = useI18n();
@@ -26,7 +15,12 @@ export function TopBar({ title, back, right }: { title: string; back?: string; r
         </Link>
       )}
       <h1 className="min-w-0 flex-1 truncate text-2xl font-bold">{title}</h1>
-      {right ?? <LangToggle />}
+      {right ?? (
+        <>
+          <LangMenu />
+          <UserButton />
+        </>
+      )}
     </header>
   );
 }

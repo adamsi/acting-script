@@ -1,3 +1,4 @@
+import { HttpError } from './errors';
 import { db } from './db';
 import { audioHash } from './inworld';
 import { spokenText } from './text';
@@ -7,21 +8,22 @@ export function spokenOf(line: { text: string; spoken_text: string }): string {
   return (line.spoken_text || '').trim() || spokenText(line.text);
 }
 
-export async function listScripts(): Promise<ScriptSummary[]> {
+export async function listScripts(userId: string): Promise<ScriptSummary[]> {
   const sql = await db();
   const rows = await sql`
     select s.id, s.title, s.author, c.name as my_name,
            (select count(*)::int from lines l where l.script_id = s.id) as line_count
     from scripts s left join characters c on c.id = s.my_character_id
+    where s.user_id = ${userId}
     order by s.updated_at desc`;
   return rows as unknown as ScriptSummary[];
 }
 
-export async function getScript(id: string): Promise<Script | null> {
+export async function getScript(userId: string, id: string): Promise<Script | null> {
   const sql = await db();
   const [s] = await sql`
     select id, title, author, language, my_character_id, last_line_idx, original_name
-    from scripts where id = ${id}`;
+    from scripts where id = ${id} and user_id = ${userId}`;
   if (!s) return null;
   const characters = (await sql`
     select id, name, gender, description, voice_id from characters
@@ -55,24 +57,28 @@ export interface Upload {
   mime: string;
 }
 
-/** Creates (id = null) or updates a script from an editor draft. Existing recordings are kept. */
-export async function saveScript(id: string | null, d: Draft, file?: Upload): Promise<string> {
+/**
+ * Creates (id = null) or updates one of the user's scripts from an editor draft.
+ * Existing recordings are kept. Creating also counts toward the user's monthly limit.
+ */
+export async function saveScript(userId: string, id: string | null, d: Draft, file?: Upload): Promise<string> {
   if (!d.characters.length) throw new Error('A script needs at least one character');
   const sql = await db();
   return await sql.begin(async (tx) => {
     let scriptId = id;
     if (!scriptId) {
       const [row] = await tx`
-        insert into scripts (title, author, language, original_file, original_name, original_mime)
-        values (${d.title}, ${d.author}, ${d.language}, ${file?.data ?? null},
+        insert into scripts (user_id, title, author, language, original_file, original_name, original_mime)
+        values (${userId}, ${d.title}, ${d.author}, ${d.language}, ${file?.data ?? null},
                 ${file?.name ?? null}, ${file?.mime ?? null})
         returning id`;
       scriptId = row.id as string;
+      await tx`insert into usage_events (user_id, kind) values (${userId}, 'create')`;
     } else {
       const res = await tx`
         update scripts set title = ${d.title}, author = ${d.author}, language = ${d.language},
-               updated_at = now() where id = ${scriptId}`;
-      if (!res.count) throw new Error('Script not found');
+               updated_at = now() where id = ${scriptId} and user_id = ${userId}`;
+      if (!res.count) throw new HttpError(404, 'not_found', 'Script not found');
     }
 
     const existingChars = new Set(

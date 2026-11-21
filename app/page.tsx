@@ -3,19 +3,24 @@ import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
+import type { Usage } from '@/lib/limits-types';
 import type { ScriptSummary } from '@/lib/types';
 import { Page, Status, TopBar } from '@/components/ui';
 
 export default function Home() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [scripts, setScripts] = useState<ScriptSummary[] | null>(null);
   const [error, setError] = useState('');
+  const [usage, setUsage] = useState<Usage | null>(null);
 
   const load = useCallback(() => {
     setError('');
     api<ScriptSummary[]>('/scripts').then(setScripts, (e) => setError(e.message));
+    api<Usage>('/usage').then(setUsage, () => {});
   }, []);
   useEffect(load, [load]);
+
+  const atLimit = !!usage && usage.used >= usage.limit;
 
   return (
     <>
@@ -46,9 +51,24 @@ export default function Home() {
         )}
       </Page>
       <div className="fixed inset-x-0 bottom-0 border-t border-line bg-bg/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-        <Link href="/new" className="btn btn-primary mx-auto flex w-full max-w-2xl text-xl">
-          + {t('newScene')}
-        </Link>
+        <div className="mx-auto flex max-w-2xl flex-col gap-2">
+          {usage && (
+            <p className={`text-center text-sm ${atLimit ? 'text-red-300' : 'text-dim'}`}>
+              {atLimit
+                ? `${t('limitReached')} · ${t('limitResets')}${new Date(usage.resets).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { day: 'numeric', month: 'long', timeZone: 'UTC' })}`
+                : `${usage.used}/${usage.limit} ${t('usage')}`}
+            </p>
+          )}
+          {atLimit ? (
+            <button className="btn btn-primary w-full text-xl" disabled>
+              + {t('newScene')}
+            </button>
+          ) : (
+            <Link href="/new" className="btn btn-primary flex w-full text-xl">
+              + {t('newScene')}
+            </Link>
+          )}
+        </div>
       </div>
     </>
   );

@@ -34,6 +34,15 @@ create table if not exists lines (
   audio_timings jsonb,
   audio_hash text
 );
+alter table scripts add column if not exists user_id text;
+create index if not exists scripts_user_idx on scripts(user_id, updated_at desc);
+create table if not exists usage_events (
+  id bigint generated always as identity primary key,
+  user_id text not null,
+  kind text not null,
+  created_at timestamptz not null default now()
+);
+create index if not exists usage_events_user_idx on usage_events(user_id, kind, created_at);
 alter table lines add column if not exists audio_improved boolean not null default false;
 create index if not exists lines_script_idx on lines(script_id, idx);
 create index if not exists characters_script_idx on characters(script_id, idx);
