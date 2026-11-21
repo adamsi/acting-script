@@ -113,25 +113,39 @@ describe('pronunciation helpers', () => {
   });
 });
 
-import { PDFDocument } from 'pdf-lib';
-import { assertFileSize, assertPdfPages, assertTextLength, MAX_CHARS, MAX_FILE_BYTES, MAX_PAGES } from '../lib/limits';
+import { PDFDocument, StandardFonts } from 'pdf-lib';
+import { assertFileSize, assertPdfSize, assertWordCount, countWords, MAX_FILE_BYTES, MAX_PAGES, MAX_WORDS } from '../lib/limits';
 
 describe('upload limits', () => {
-  const pdf = async (pages: number) => {
+  const pdf = async (pages: number, wordsPerPage = 0) => {
     const d = await PDFDocument.create();
-    for (let i = 0; i < pages; i++) d.addPage([200, 200]);
+    const font = await d.embedFont(StandardFonts.Helvetica);
+    for (let i = 0; i < pages; i++) {
+      const page = d.addPage([2000, 2000]);
+      // tiny text: a huge number of words on one page
+      for (let w = 0, y = 1990; w < wordsPerPage; w += 200, y -= 3)
+        page.drawText(Array(Math.min(200, wordsPerPage - w)).fill('word').join(' '), { x: 5, y, size: 2, font });
+    }
     return Buffer.from(await d.save());
   };
   it('accepts a script of exactly the page limit and rejects one page more', async () => {
-    await expect(assertPdfPages(await pdf(MAX_PAGES))).resolves.toBeUndefined();
-    await expect(assertPdfPages(await pdf(MAX_PAGES + 1))).rejects.toMatchObject({ code: 'script_too_long', status: 413 });
+    await expect(assertPdfSize(await pdf(MAX_PAGES))).resolves.toBeUndefined();
+    await expect(assertPdfSize(await pdf(MAX_PAGES + 1))).rejects.toMatchObject({ code: 'script_too_long', status: 413 });
   });
+  it('rejects a single page crammed with too many words', async () => {
+    await expect(assertPdfSize(await pdf(1, 3000))).resolves.toBeUndefined();
+    await expect(assertPdfSize(await pdf(1, MAX_WORDS + 2000))).rejects.toMatchObject({ code: 'script_too_long' });
+  }, 30000);
   it('rejects an unreadable PDF', async () => {
-    await expect(assertPdfPages(Buffer.from('nope'))).rejects.toMatchObject({ code: 'bad_file' });
+    await expect(assertPdfSize(Buffer.from('nope'))).rejects.toMatchObject({ code: 'bad_file' });
   });
-  it('limits text length and file size', () => {
-    expect(() => assertTextLength('א'.repeat(MAX_CHARS))).not.toThrow();
-    expect(() => assertTextLength('א'.repeat(MAX_CHARS + 1))).toThrow();
+  it('counts words, also when the spaces between them were lost', () => {
+    expect(countWords('שלום לך עולם')).toBe(3);
+    expect(countWords('א'.repeat(500))).toBe(100);
+    expect(() => assertWordCount(Array(MAX_WORDS).fill('מה').join(' '))).not.toThrow();
+    expect(() => assertWordCount(Array(MAX_WORDS + 1).fill('מה').join(' '))).toThrow();
+  });
+  it('limits file size', () => {
     expect(() => assertFileSize(MAX_FILE_BYTES)).not.toThrow();
     expect(() => assertFileSize(MAX_FILE_BYTES + 1)).toThrow();
   });

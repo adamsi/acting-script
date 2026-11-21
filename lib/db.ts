@@ -43,6 +43,16 @@ create table if not exists usage_events (
   created_at timestamptz not null default now()
 );
 create index if not exists usage_events_user_idx on usage_events(user_id, kind, created_at);
+create table if not exists worksheets (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  title text not null default '',
+  author text not null default '',
+  lines jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists worksheets_user_idx on worksheets(user_id, updated_at desc);
 alter table lines add column if not exists audio_improved boolean not null default false;
 create index if not exists lines_script_idx on lines(script_id, idx);
 create index if not exists characters_script_idx on characters(script_id, idx);

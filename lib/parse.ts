@@ -1,6 +1,6 @@
 import mammoth from 'mammoth';
 import { HttpError } from './errors';
-import { assertPdfPages, assertTextLength } from './limits';
+import { assertPdfSize, assertWordCount } from './limits';
 import type { Gender } from './types';
 
 export interface Parsed {
@@ -75,7 +75,7 @@ export async function parseScript(
   const lower = name.toLowerCase();
   const content: unknown[] = [];
   if (lower.endsWith('.pdf') || mime === 'application/pdf') {
-    await assertPdfPages(file);
+    await assertPdfSize(file);
     content.push({
       type: 'input_file',
       filename: 'script.pdf',
@@ -84,7 +84,7 @@ export async function parseScript(
   } else if (lower.endsWith('.docx')) {
     let value: string;
     try {
-      assertTextLength((await mammoth.extractRawText({ buffer: file })).value);
+      assertWordCount((await mammoth.extractRawText({ buffer: file })).value);
       value = (await mammoth.convertToHtml({ buffer: file })).value;
     } catch (e) {
       if (e instanceof HttpError) throw e;
@@ -92,7 +92,7 @@ export async function parseScript(
     }
     content.push({ type: 'input_text', text: `Document converted to HTML (bold preserved):\n\n${value}` });
   } else if (lower.endsWith('.txt') || mime.startsWith('text/')) {
-    assertTextLength(file.toString('utf8'));
+    assertWordCount(file.toString('utf8'));
     content.push({ type: 'input_text', text: file.toString('utf8') });
   } else {
     throw new HttpError(400, 'unsupported', 'Unsupported file type. Upload a PDF, Word (.docx) or text file.');

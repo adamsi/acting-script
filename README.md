@@ -8,8 +8,8 @@ there are two tools:
 - **טבלה בשיטת צ׳באק (Chubbuck worksheet)** — upload a scene, confirm the text, and download a
   Word file: a framed box of general questions (overall objective, substitution, scene objective,
   obstacles, moment before, given circumstances, place and fourth wall) and a table with one row
-  per speech and the columns text / actions / obstacles / doings / inner dialogue. Nothing from
-  this tool is stored.
+  per speech and the columns text / actions / obstacles / doings / inner dialogue. Worksheets are
+  saved per user and can be downloaded again, edited or deleted.
 
 ## How script learning works
 
@@ -46,7 +46,8 @@ created it; nobody else can read, change or play it.
 | --- | --- |
 | New scenes per user | 20 per calendar month (UTC). Deleting a scene does not give one back. |
 | Upload size | 4MB |
-| Script length | 30 pages for PDF; about 54,000 characters for Word / text files. Longer scripts are rejected before any analysis. |
+| Script length | 30 pages (PDF) and 12,000 words (any file, however few pages). Longer scripts are rejected before any analysis; the word limit also applies to edited text when it is saved. |
+| Saved worksheets | 100 per user |
 
 ## Environment variables
 

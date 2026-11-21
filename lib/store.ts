@@ -1,6 +1,7 @@
 import { HttpError } from './errors';
 import { db } from './db';
 import { audioHash } from './inworld';
+import { assertWordCount } from './limits';
 import { spokenText } from './text';
 import type { Character, Draft, Line, Script, ScriptSummary } from './types';
 
@@ -63,6 +64,8 @@ export interface Upload {
  */
 export async function saveScript(userId: string, id: string | null, d: Draft, file?: Upload): Promise<string> {
   if (!d.characters.length) throw new Error('A script needs at least one character');
+  // Edited text is recorded and analyzed too, so the same size limit applies to it.
+  assertWordCount(d.lines.map((l) => `${l.text} ${l.spoken_text || ''}`).join(' '));
   const sql = await db();
   return await sql.begin(async (tx) => {
     let scriptId = id;

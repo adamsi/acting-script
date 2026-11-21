@@ -10,8 +10,8 @@ export const MAX_SCENES_PER_MONTH = 20;
 export const MAX_ANALYSES_PER_MONTH = 40;
 export const MAX_FILE_BYTES = 4 * 1024 * 1024;
 export const MAX_PAGES = 30;
-/** For files without real pages (.docx, .txt): about 30 pages of dialogue. */
-export const MAX_CHARS = MAX_PAGES * 1800;
+/** About 30 full pages of dialogue. Stops a single page crammed with a huge amount of text. */
+export const MAX_WORDS = 12_000;
 
 export type UsageKind = 'create' | 'analyze';
 
@@ -57,9 +57,24 @@ export function assertFileSize(bytes: number) {
 }
 
 const tooLong = () =>
-  new HttpError(413, 'script_too_long', `Script is too long (max ${MAX_PAGES} pages).`);
+  new HttpError(413, 'script_too_long', `Script is too long (max ${MAX_PAGES} pages or ${MAX_WORDS.toLocaleString('en-US')} words).`);
 
-export async function assertPdfPages(file: Buffer) {
+/**
+ * Number of words in a text. Some PDFs lose the spaces between words when their text is
+ * extracted, so the count never goes below letters / 5 (an average word).
+ */
+export function countWords(text: string): number {
+  const tokens = text.split(/\s+/).filter(Boolean).length;
+  const letters = text.replace(/\s+/g, '').length;
+  return Math.max(tokens, Math.ceil(letters / 5));
+}
+
+export function assertWordCount(text: string) {
+  if (countWords(text) > MAX_WORDS) throw tooLong();
+}
+
+/** Rejects PDFs with too many pages or too much text (however few pages it is squeezed into). */
+export async function assertPdfSize(file: Buffer) {
   let pages: number;
   try {
     pages = (await PDFDocument.load(file, { ignoreEncryption: true, updateMetadata: false })).getPageCount();
@@ -67,8 +82,12 @@ export async function assertPdfPages(file: Buffer) {
     throw new HttpError(400, 'bad_file', 'This PDF could not be read.');
   }
   if (pages > MAX_PAGES) throw tooLong();
-}
-
-export function assertTextLength(text: string) {
-  if (text.length > MAX_CHARS) throw tooLong();
+  let text = '';
+  try {
+    const { extractText, getDocumentProxy } = await import('unpdf');
+    text = (await extractText(await getDocumentProxy(new Uint8Array(file)), { mergePages: true })).text;
+  } catch {
+    // No readable text layer (e.g. a scan): the page limit above is what bounds it.
+  }
+  assertWordCount(text);
 }

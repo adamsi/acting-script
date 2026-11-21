@@ -1,26 +1,12 @@
 import { json, route } from '@/lib/auth';
-import { buildChubbuckDocx } from '@/lib/chubbuck';
-import { HttpError } from '@/lib/errors';
-import { MAX_CHARS } from '@/lib/limits';
+import { cleanWorksheet, listWorksheets, saveWorksheet } from '@/lib/worksheets';
 
-/** Builds the Chubbuck worksheet (.docx) from the lines the user confirmed. Nothing is stored. */
-export const POST = route(async (req) => {
+/** The user's saved worksheets. */
+export const GET = route(async (_req, _params, userId) => json(await listWorksheets(userId)));
+
+/** Saves the confirmed worksheet ({ id } replaces an existing one). The Word file is built on download. */
+export const POST = route(async (req, _params, userId) => {
   const body = await req.json();
-  const lines = (Array.isArray(body.lines) ? body.lines : [])
-    .map((l: { speaker?: unknown; text?: unknown }) => ({ speaker: String(l.speaker ?? '').trim(), text: String(l.text ?? '').trim() }))
-    .filter((l: { text: string }) => l.text);
-  if (!lines.length) return json({ error: 'No lines' }, 400);
-  if (lines.reduce((n: number, l: { text: string }) => n + l.text.length, 0) > MAX_CHARS * 2)
-    throw new HttpError(413, 'script_too_long', 'Script is too long.');
-  const file = await buildChubbuckDocx({
-    title: String(body.title ?? '').trim().slice(0, 200),
-    author: String(body.author ?? '').trim().slice(0, 200),
-    lines,
-  });
-  return new Response(new Uint8Array(file), {
-    headers: {
-      'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'Cache-Control': 'no-store',
-    },
-  });
+  const id = await saveWorksheet(userId, typeof body.id === 'string' ? body.id : null, cleanWorksheet(body));
+  return json({ id });
 });
