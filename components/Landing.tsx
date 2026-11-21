@@ -82,8 +82,9 @@ export default function Landing() {
           <LangMenu />
         </div>
         <div className="flex flex-1 flex-col justify-center gap-8">
+          {/* On wide screens the heading sits over the bright clouds, so it is dark there. */}
           <div className="flex flex-col items-center gap-3 text-center">
-            <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 text-mine backdrop-blur-sm" aria-hidden>
+            <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 text-mine backdrop-blur-sm md:bg-white/40 md:text-bg" aria-hidden>
               <svg viewBox="0 0 48 48" width="46" height="46" {...stroke}>
                 {/* stage curtains */}
                 <path d="M6 8h36" />
@@ -92,10 +93,10 @@ export default function Landing() {
                 <path d="M18 40h12" />
               </svg>
             </span>
-            <h1 className="text-5xl font-bold drop-shadow-lg" dir="ltr">
+            <h1 className="text-5xl font-bold drop-shadow-lg md:text-bg md:drop-shadow-none" dir="ltr">
               {t('appName')}
             </h1>
-            <p className="text-xl text-ink/85 drop-shadow">{t('welcomeHi')}</p>
+            <p className="text-xl text-ink/85 drop-shadow md:font-medium md:text-bg/85 md:drop-shadow-none">{t('welcomeHi')}</p>
           </div>
 
           <div className="flex flex-col gap-3 rounded-3xl border border-white/15 bg-bg/45 p-4 backdrop-blur-md">
