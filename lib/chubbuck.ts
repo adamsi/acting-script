@@ -32,15 +32,17 @@ const PAGE_H = 11906;
 const MARGIN = 850;
 const WIDTH = PAGE_W - 2 * MARGIN;
 
-/** General fields above the table: label and number of writing lines. */
-const FIELDS: [string, number][] = [
-  ['מטרת העל:', 1],
-  ['תחליף:', 1],
-  ['מטרת הסצינה:', 1],
-  ['מכשולים:', 3],
-  ['רגע לפני:', 3],
-  ['נסיבות מקדימות:', 3],
-  ['חלל וקיר רביעי:', 1],
+/**
+ * General fields above the table. A row is either two short fields side by side
+ * (half a row each) or one field with several writing lines across the full width.
+ */
+type BoxRow = { pair: [string, string] } | { label: string; lines: number };
+const BOX: BoxRow[] = [
+  { pair: ['מטרת העל:', 'תחליף:'] },
+  { pair: ['מטרת הסצינה:', 'חלל וקיר רביעי:'] },
+  { label: 'מכשולים:', lines: 3 },
+  { label: 'רגע לפני:', lines: 3 },
+  { label: 'נסיבות מקדימות:', lines: 3 },
 ];
 
 /** Table columns, first one is the rightmost (Hebrew). The inner-dialogue column is the widest. */
@@ -72,30 +74,53 @@ const GRID = line(BorderStyle.SINGLE, 6, '000000');
 
 /** The framed box of general questions, with ruled lines to write on. */
 function fieldsBox(): Table {
+  const HALF = Math.floor(WIDTH / 2);
+  const SEP = line(BorderStyle.SINGLE, 6, '7F7F7F');
+  const DOTS = line(BorderStyle.DOTTED, 4, 'A6A6A6');
   const rows: TableRow[] = [];
-  FIELDS.forEach(([label, lines], f) => {
-    for (let i = 0; i < lines; i++) {
-      const lastOfField = i === lines - 1;
-      const lastOfBox = lastOfField && f === FIELDS.length - 1;
+  const boxCell = (label: string, opts: { width: number; span?: number; top: boolean; bottom: ReturnType<typeof line>; start: boolean; end: boolean }) =>
+    new TableCell({
+      width: { size: opts.width, type: WidthType.DXA },
+      columnSpan: opts.span,
+      verticalAlign: VerticalAlign.CENTER,
+      margins: { top: 40, bottom: 40, left: 160, right: 160 },
+      borders: {
+        top: opts.top ? FRAME : NONE,
+        bottom: opts.bottom,
+        // The table is laid out right to left: "start" is the right edge.
+        right: opts.start ? FRAME : SEP,
+        left: opts.end ? FRAME : SEP,
+      },
+      children: [para(label ? [run(label, { bold: true }), run(' ')] : [run('')])],
+    });
+  const row = (children: TableCell[]) => new TableRow({ cantSplit: true, height: { value: 520, rule: HeightRule.ATLEAST }, children });
+
+  BOX.forEach((item, r) => {
+    const first = r === 0;
+    const last = r === BOX.length - 1;
+    if ('pair' in item) {
+      const bottom = last ? FRAME : SEP;
       rows.push(
-        new TableRow({
-          cantSplit: true,
-          height: { value: 520, rule: HeightRule.ATLEAST },
-          children: [
-            new TableCell({
-              width: { size: WIDTH, type: WidthType.DXA },
-              verticalAlign: VerticalAlign.CENTER,
-              margins: { top: 40, bottom: 40, left: 160, right: 160 },
-              borders: {
-                top: f === 0 && i === 0 ? FRAME : NONE,
-                left: FRAME,
-                right: FRAME,
-                bottom: lastOfBox ? FRAME : lastOfField ? line(BorderStyle.SINGLE, 6, '7F7F7F') : line(BorderStyle.DOTTED, 4, 'A6A6A6'),
-              },
-              children: [para(i === 0 ? [run(label, { bold: true }), run(' ')] : [run('')])],
-            }),
-          ],
-        })
+        row([
+          boxCell(item.pair[0], { width: HALF, top: first, bottom, start: true, end: false }),
+          boxCell(item.pair[1], { width: WIDTH - HALF, top: first, bottom, start: false, end: true }),
+        ])
+      );
+      return;
+    }
+    for (let i = 0; i < item.lines; i++) {
+      const lastLine = i === item.lines - 1;
+      rows.push(
+        row([
+          boxCell(i === 0 ? item.label : '', {
+            width: WIDTH,
+            span: 2,
+            top: first && i === 0,
+            bottom: lastLine ? (last ? FRAME : SEP) : DOTS,
+            start: true,
+            end: true,
+          }),
+        ])
       );
     }
   });
@@ -103,7 +128,7 @@ function fieldsBox(): Table {
     visuallyRightToLeft: true,
     layout: TableLayoutType.FIXED,
     width: { size: WIDTH, type: WidthType.DXA },
-    columnWidths: [WIDTH],
+    columnWidths: [HALF, WIDTH - HALF],
     rows,
   });
 }
