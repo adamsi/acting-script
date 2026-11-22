@@ -12,10 +12,11 @@ export interface Fix {
 }
 
 /**
- * Pronunciation check. Kept on gpt-5.4 by default: on a 3-page scene gpt-5.4-mini cost about half but
- * missed 10 of the 24 corrections and got two verb stresses wrong; nano invented corrections.
+ * Pronunciation check. gpt-5.4-mini costs about half of gpt-5.4 but, on a 3-page test scene, made 17 of
+ * the 24 corrections gpt-5.4 made and got two verb stresses wrong. Set PRONUNCIATION_MODEL=gpt-5.4 for
+ * the more accurate check. nano invented corrections, so do not use it.
  */
-const MODEL = process.env.PRONUNCIATION_MODEL || 'gpt-5.4';
+const MODEL = process.env.PRONUNCIATION_MODEL || 'gpt-5.4-mini';
 export const PRONUNCIATION_FIX = process.env.PRONUNCIATION_FIX !== 'off';
 
 const HEB = '֐-׿';

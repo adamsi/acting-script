@@ -60,7 +60,7 @@ created it; nobody else can read, change or play it.
 | `INWORLD_API_KEY` | The Base64 "Basic" key from the Inworld portal. |
 | `EXTENDED_LIMIT_EMAILS` | Optional. Comma-separated emails whose accounts get the 30-page limit. The email must be verified in Clerk. |
 | `OPENAI_MODEL` | Optional. Model for reading uploaded scripts, default `gpt-5.4-mini`. |
-| `PRONUNCIATION_MODEL` | Optional. Model for the Hebrew pronunciation check, default `gpt-5.4`. `gpt-5.4-mini` is about half the price but less accurate. |
+| `PRONUNCIATION_MODEL` | Optional. Model for the Hebrew pronunciation check, default `gpt-5.4-mini`. `gpt-5.4` costs about twice as much and catches more mispronounced words. |
 | `INWORLD_MODEL` | Optional, default `inworld-tts-1.5-max`. |
 | `PRONUNCIATION_EFFORT` | Optional, OpenAI reasoning effort for the pronunciation check, default `medium`. |
 | `CLERK_JWT_KEY` | Optional. Clerk's JWKS public key, to verify sessions without a network request. |
