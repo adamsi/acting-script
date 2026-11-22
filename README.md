@@ -8,8 +8,14 @@ there are two tools:
 - **טבלה בשיטת צ׳באק (Chubbuck worksheet)** — upload a scene, confirm the text, and download a
   Word file: a framed box of general questions (overall objective, substitution, scene objective,
   obstacles, moment before, given circumstances, place and fourth wall) and a table with one row
-  per speech and the columns text / actions / obstacles / doings / inner dialogue. Worksheets are
-  saved per user and can be downloaded again, edited or deleted.
+  per speech and the columns (right to left) obstacles / text / actions / doings / inner dialogue,
+  with no horizontal lines between speeches. Worksheets are saved per user and can be downloaded
+  again, edited or deleted. **No AI is used for this tool**: the file (PDF, Word, ODT, RTF, HTML or
+  text) is read in the browser and the speakers are found by code from the layout (bold or styled
+  names on their own line, `NAME: text`, bold name prefix, `NAME - text`, capitals). The text is
+  kept exactly as written, and the check screen can fix anything the code got wrong (rename or add
+  characters, change a speaker, merge, split at the cursor, add or delete a speech). The reading
+  code is `lib/script/`, shared in spirit with the standalone Chubbuck Table project.
 
 ## How script learning works
 

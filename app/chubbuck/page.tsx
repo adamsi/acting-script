@@ -1,10 +1,11 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { api, draftFromParsed, newKey } from '@/lib/client';
-import { errorText, useI18n, useUploadLimits } from '@/lib/i18n';
-import type { Draft } from '@/lib/types';
+import { api } from '@/lib/client';
+import { errorText, useI18n, useUploadLimits, type Key } from '@/lib/i18n';
+import { draftFromParsed, newKey, toWorksheet, withoutSpeaker, type Draft } from '@/lib/table-draft';
+import { ReadError } from '@/lib/script/types';
 import type { WorksheetSummary } from '@/lib/worksheets';
-import { LinesEditor } from '@/components/Editor';
+import { CharactersEditor, SpeechesEditor } from '@/components/TableEditor';
 import { Page, ProgressCard, Status, Stepper, TopBar } from '@/components/ui';
 
 const MAX_BYTES = 4 * 1024 * 1024;
@@ -13,16 +14,22 @@ type View = 'list' | 'upload' | 'check' | 'ready';
 /** Turns saved worksheet content back into an editable draft. */
 function draftFromWorksheet(w: { title: string; author: string; lines: { speaker: string; text: string }[] }): Draft {
   const keys = new Map<string, string>();
-  for (const l of w.lines) if (!keys.has(l.speaker)) keys.set(l.speaker, newKey());
+  for (const l of w.lines) if (l.speaker && !keys.has(l.speaker)) keys.set(l.speaker, newKey());
   return {
     title: w.title,
     author: w.author,
-    language: 'he',
-    my: '',
-    characters: [...keys].map(([name, key]) => ({ key, name, gender: 'unknown', description: '', voice_id: '' })),
-    lines: w.lines.map((l) => ({ key: newKey(), speaker: keys.get(l.speaker)!, text: l.text, spoken_text: '' })),
+    characters: [...keys].map(([name, key]) => ({ key, name })),
+    speeches: w.lines.map((l) => ({ key: newKey(), speaker: keys.get(l.speaker) ?? '', text: l.text })),
   };
 }
+
+const READ_ERRORS: Record<ReadError['code'], Key> = {
+  unsupported: 'unsupported',
+  old_doc: 'errOldDoc',
+  image: 'errImage',
+  empty: 'errEmpty',
+  broken: 'errBroken',
+};
 
 export default function Chubbuck() {
   const { t, lang } = useI18n();
@@ -32,6 +39,7 @@ export default function Chubbuck() {
   const [listError, setListError] = useState('');
   const [fileName, setFileName] = useState('');
   const [draft, setDraftState] = useState<Draft | null>(null);
+  const [recognized, setRecognized] = useState(true);
   /** id of the saved worksheet being edited (null while it is new) */
   const [savedId, setSavedId] = useState<string | null>(null);
   const [busy, setBusy] = useState<'' | 'parse' | 'save' | 'open'>('');
@@ -57,18 +65,18 @@ export default function Chubbuck() {
   async function onFile(f: File | undefined) {
     if (!f) return;
     setError('');
-    if (!/\.(pdf|docx|txt)$/i.test(f.name)) return setError(t('unsupported'));
     if (f.size > MAX_BYTES) return setError(t('tooBig'));
     setFileName(f.name);
     setBusy('parse');
     try {
-      const form = new FormData();
-      form.append('file', f);
-      const parsed = await api<Parameters<typeof draftFromParsed>[0]>('/scripts/parse?for=table', { method: 'POST', body: form });
-      setDraftState(draftFromParsed(parsed, []));
+      // The script is read in the browser, by code: no server and no AI. The readers are loaded only now.
+      const [{ readScript }, { parseScript }] = await Promise.all([import('@/lib/script/read'), import('@/lib/script/parse')]);
+      const parsed = parseScript(await readScript(await f.arrayBuffer(), f.name));
+      setRecognized(parsed.recognized);
+      setDraftState(draftFromParsed(parsed));
       setView('check');
     } catch (e) {
-      setError(errorText(e, t));
+      setError(t(e instanceof ReadError ? READ_ERRORS[e.code] : 'errBroken'));
     } finally {
       setBusy('');
     }
@@ -79,15 +87,9 @@ export default function Chubbuck() {
     setError('');
     setBusy('save');
     try {
-      const nameOf = new Map(draft.characters.map((c) => [c.key, c.name.trim()]));
       const { id } = await api<{ id: string }>('/chubbuck', {
         method: 'POST',
-        body: JSON.stringify({
-          id: savedId ?? undefined,
-          title: draft.title,
-          author: draft.author,
-          lines: draft.lines.map((l) => ({ speaker: nameOf.get(l.speaker) || '', text: l.text })),
-        }),
+        body: JSON.stringify({ id: savedId ?? undefined, ...toWorksheet(draft) }),
       });
       setSavedId(id);
       setView('ready');
@@ -123,7 +125,8 @@ export default function Chubbuck() {
     }
   }
 
-  const valid = !!draft && draft.lines.length > 0 && draft.lines.every((l) => l.text.trim()) && draft.characters.every((c) => c.name.trim());
+  const valid = !!draft && toWorksheet(draft).lines.length > 0;
+  const missing = draft ? withoutSpeaker(draft) : 0;
   const wizard = view !== 'list';
   const date = (iso: string) => new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -134,7 +137,7 @@ export default function Chubbuck() {
         {wizard && <Stepper steps={[t('stepUpload'), t('stepCheck'), t('stepDownload')]} current={view === 'upload' ? 0 : view === 'check' ? 1 : 2} />}
         {error && <p className="card border-red-400/50 p-4 text-red-300" dir="auto" role="alert">{error}</p>}
 
-        {busy === 'parse' && <ProgressCard title={t('analyzing')} hint={fileName} estimateMs={40000} />}
+        {busy === 'parse' && <ProgressCard title={t('analyzing')} hint={fileName} estimateMs={4000} />}
         {busy === 'save' && <ProgressCard title={t('creatingTable')} estimateMs={3000} />}
         {busy === 'open' && <Status />}
 
@@ -183,7 +186,7 @@ export default function Chubbuck() {
             <input
               type="file"
               className="sr-only"
-              accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              accept=".pdf,.docx,.odt,.rtf,.html,.htm,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.oasis.opendocument.text,application/rtf,text/*"
               onChange={(e) => {
                 onFile(e.target.files?.[0]);
                 e.target.value = '';
@@ -197,22 +200,12 @@ export default function Chubbuck() {
             <input className="field text-2xl font-bold" dir="auto" aria-label={t('title')} placeholder={t('title')} value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
             <input className="field" dir="auto" aria-label={t('author')} placeholder={t('author')} value={draft.author} onChange={(e) => setDraft((d) => ({ ...d, author: e.target.value }))} />
 
-            <h2 className="mt-2 text-xl font-bold">{t('characters')}</h2>
-            <div className="flex flex-wrap gap-2">
-              {draft.characters.map((c) => (
-                <input
-                  key={c.key}
-                  className="field w-40 font-bold text-other"
-                  dir="auto"
-                  aria-label={t('name')}
-                  value={c.name}
-                  onChange={(e) => setDraft((d) => ({ ...d, characters: d.characters.map((x) => (x.key === c.key ? { ...x, name: e.target.value } : x)) }))}
-                />
-              ))}
-            </div>
-
-            <p className="mt-2 text-xl font-semibold">{t('checkTable')}</p>
-            <LinesEditor draft={draft} setDraft={setDraft} />
+            <p className={recognized ? 'text-dim' : 'text-mine'}>
+              {recognized ? t('found').replace('{c}', String(draft.characters.length)).replace('{s}', String(draft.speeches.length)) : t('notRecognized')}
+              {missing > 0 && recognized && <span className="text-red-300"> · {missing === 1 ? t('noSpeakerOne') : t('noSpeaker').replace('{n}', String(missing))}</span>}
+            </p>
+            <CharactersEditor draft={draft} update={setDraft} />
+            <SpeechesEditor draft={draft} update={setDraft} />
           </>
         )}
 
@@ -221,7 +214,7 @@ export default function Chubbuck() {
             <span className="flex h-20 w-20 items-center justify-center rounded-full bg-other/15 text-4xl text-other" aria-hidden>✓</span>
             <p className="text-2xl font-bold">{t('tableReady')}</p>
             <p className="text-dim">
-              {draft?.lines.length} {t('rowsCount')} · {t('tableReadyHint')}
+              {draft ? toWorksheet(draft).lines.length : 0} {t('rowsCount')} · {t('tableReadyHint')}
             </p>
             <p className="text-other">{t('tableSaved')}</p>
             <a className="btn btn-primary w-full text-xl" href={`/api/chubbuck/${savedId}`} download>

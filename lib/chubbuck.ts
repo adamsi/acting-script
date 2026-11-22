@@ -47,12 +47,14 @@ const BOX: BoxRow[] = [
 
 /** Table columns, first one is the rightmost (Hebrew). The inner-dialogue column is the widest. */
 const COLUMNS: [string, number][] = [
+  ['מכשולים', 0.12],
   ['טקסט + אובייקטים פנימיים + סימון ביטים', 0.31],
   ['פעולות', 0.12],
-  ['מכשולים', 0.12],
   ['Doings', 0.12],
   ['דיאלוג פנימי', 0.33],
 ];
+/** Index of the column that holds the speaker and the text. */
+const TEXT_COLUMN = 1;
 const COL_W = COLUMNS.map(([, f]) => Math.round(WIDTH * f));
 COL_W[COL_W.length - 1] += WIDTH - COL_W.reduce((a, b) => a + b, 0);
 
@@ -133,12 +135,17 @@ function fieldsBox(): Table {
   });
 }
 
-function cell(children: Paragraph[], width: number, header = false): TableCell {
+/**
+ * The header row has a full border. Rows of speeches have only the vertical lines between columns:
+ * no horizontal line between speeches; the last row closes the table.
+ */
+function cell(children: Paragraph[], width: number, opts: { header?: boolean; last?: boolean } = {}): TableCell {
+  const header = !!opts.header;
   return new TableCell({
     width: { size: width, type: WidthType.DXA },
     verticalAlign: header ? VerticalAlign.CENTER : VerticalAlign.TOP,
     margins: { top: 90, bottom: 90, left: 110, right: 110 },
-    borders: { top: GRID, bottom: GRID, left: GRID, right: GRID },
+    borders: header ? { top: GRID, bottom: GRID, left: GRID, right: GRID } : { top: NONE, bottom: opts.last ? GRID : NONE, left: GRID, right: GRID },
     shading: header ? { type: ShadingType.CLEAR, color: 'auto', fill: 'E7E6E6' } : undefined,
     children,
   });
@@ -148,18 +155,19 @@ function workTable(lines: ChubbuckInput['lines']): Table {
   const header = new TableRow({
     tableHeader: true, // repeated at the top of every page
     cantSplit: true,
-    children: COLUMNS.map(([title], i) => cell([para([run(title, { bold: true, size: 21 })], { center: true })], COL_W[i], true)),
+    children: COLUMNS.map(([title], i) => cell([para([run(title, { bold: true, size: 21 })], { center: true })], COL_W[i], { header: true })),
   });
   const rows = lines.map(
-    (l) =>
+    (l, row) =>
       new TableRow({
         // Short speeches stay whole on a page; a long monologue may continue on the next one.
         cantSplit: l.text.length < 700,
         height: { value: 1000, rule: HeightRule.ATLEAST },
-        children: [
-          cell([para([run(l.speaker, { bold: true })], { after: 40 }), ...l.text.split(/\n+/).map((t) => para([run(t.trim())]))], COL_W[0]),
-          ...COL_W.slice(1).map((w) => cell([para([run('')])], w)),
-        ],
+        children: COL_W.map((w, i) =>
+          i === TEXT_COLUMN
+            ? cell([para([run(l.speaker, { bold: true })], { after: 40 }), ...l.text.split(/\n+/).map((t) => para([run(t.trim())]))], w, { last: row === lines.length - 1 })
+            : cell([para([run('')])], w, { last: row === lines.length - 1 })
+        ),
       })
   );
   return new Table({
@@ -167,6 +175,8 @@ function workTable(lines: ChubbuckInput['lines']): Table {
     layout: TableLayoutType.FIXED,
     width: { size: WIDTH, type: WidthType.DXA },
     columnWidths: COL_W,
+    // The lines are set cell by cell; without this the library draws a line between every row.
+    borders: { top: NONE, bottom: NONE, left: NONE, right: NONE, insideHorizontal: NONE, insideVertical: GRID },
     rows: [header, ...rows],
   });
 }
