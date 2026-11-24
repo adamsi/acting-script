@@ -84,18 +84,9 @@ export default function Landing() {
         <div className="flex flex-1 flex-col justify-center gap-8">
           {/* On wide screens the heading sits over the bright clouds, so it is dark there. */}
           <div className="flex flex-col items-center gap-3 text-center">
-            <span className="flex h-20 w-20 items-center justify-center rounded-3xl bg-white/15 text-mine backdrop-blur-sm md:bg-white/40 md:text-bg" aria-hidden>
-              <svg viewBox="0 0 48 48" width="46" height="46" {...stroke}>
-                {/* stage curtains */}
-                <path d="M6 8h36" />
-                <path d="M9 8c0 12-1 22-3 32h9c-1-10 0-20 4-32" />
-                <path d="M39 8c0 12 1 22 3 32h-9c1-10 0-20-4-32" />
-                <path d="M18 40h12" />
-              </svg>
-            </span>
-            <h1 className="text-5xl font-bold drop-shadow-lg md:text-bg md:drop-shadow-none" dir="ltr">
-              {t('appName')}
-            </h1>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.jpg" alt="" width={160} height={160} className="h-40 w-40 rounded-[2rem] shadow-xl shadow-black/40" />
+            <h1 className="text-4xl font-bold leading-tight drop-shadow-lg md:text-bg md:drop-shadow-none">{t('appName')}</h1>
             <p className="text-xl text-ink/85 drop-shadow md:font-medium md:text-bg/85 md:drop-shadow-none">{t('welcomeHi')}</p>
           </div>
 

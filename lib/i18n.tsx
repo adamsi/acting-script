@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 export type Lang = 'he' | 'en';
 
 const dict = {
-  appName: ['Acting Tools', 'Acting Tools'],
+  appName: ['עבודה בשיטת צ׳באק', 'Working in the Chubbuck Technique'],
   chooseTool: ['מה עושים היום?', 'What are we doing today?'],
   toolLearn: ['לימוד טקסט', 'Learn a script'],
   toolLearnDesc: ['האפליקציה מקריאה את שאר הדמויות ומחכה לך בתור שלך', 'The app reads the other characters and waits for you on your lines'],

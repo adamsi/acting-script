@@ -10,7 +10,7 @@ import './globals.css';
 const heebo = Heebo({ subsets: ['hebrew', 'latin'], variable: '--font-heebo' });
 
 export const metadata: Metadata = {
-  title: 'Acting Tools',
+  title: 'עבודה בשיטת צ׳באק',
   description: 'Tools for actors: learn a script with the other characters read aloud, and build a Chubbuck worksheet.',
 };
 export const viewport: Viewport = {
