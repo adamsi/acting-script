@@ -2,9 +2,9 @@
 import Link from 'next/link';
 import { use } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { STEPS, STEPS_SOURCE } from '@/lib/steps';
+import { STEPS } from '@/lib/steps';
 import { STEP_DETAILS } from '@/lib/steps-detail';
-import { Page, TopBar } from '@/components/ui';
+import { Chevron, Page, TopBar } from '@/components/ui';
 
 /** One step of the 12, with its full explanation (the explanation exists in Hebrew only). */
 export default function Step({ params }: { params: Promise<{ n: string }> }) {
@@ -51,25 +51,21 @@ export default function Step({ params }: { params: Promise<{ n: string }> }) {
         <nav className="flex gap-3">
           {n > 1 ? (
             <Link href={`/steps/${n - 1}`} className="btn min-w-0 flex-1" rel="prev">
-              <span aria-hidden>{lang === 'he' ? '›' : '‹'}</span>&nbsp;<span className="truncate">{STEPS[n - 2].title[i]}</span>
+              <Chevron back />
+              <span className="truncate">{STEPS[n - 2].title[i]}</span>
             </Link>
           ) : (
             <span className="flex-1" />
           )}
           {n < STEPS.length ? (
             <Link href={`/steps/${n + 1}`} className="btn btn-primary min-w-0 flex-1" rel="next">
-              <span className="truncate">{STEPS[n].title[i]}</span>&nbsp;<span aria-hidden>{lang === 'he' ? '‹' : '›'}</span>
+              <span className="truncate">{STEPS[n].title[i]}</span>
+              <Chevron />
             </Link>
           ) : (
             <span className="flex-1" />
           )}
         </nav>
-        <p className="pb-4 text-center text-sm text-dim">
-          {t('stepsSource')}{' '}
-          <a href={STEPS_SOURCE} target="_blank" rel="noopener noreferrer" className="underline">
-            Chubbuck Israel
-          </a>
-        </p>
       </Page>
     </>
   );

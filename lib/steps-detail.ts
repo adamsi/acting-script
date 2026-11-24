@@ -1,5 +1,5 @@
 /**
- * The longer explanation of each of the 12 steps (Hebrew), as published by Chubbuck Israel (see STEPS_SOURCE in steps.ts).
+ * The longer explanation of each of the 12 steps (Hebrew), as published by Chubbuck Israel (see steps.ts).
  * One list per step, in order: `h` marks a sub-heading, the rest are paragraphs.
  */
 export const STEP_DETAILS: { h?: true; t: string }[][] = [

@@ -1,8 +1,7 @@
 /**
  * The 12 steps of the Chubbuck technique: [Hebrew, English] title and description.
- * The Hebrew text is the summary published by Chubbuck Israel (see STEPS_SOURCE); the English is a translation of it.
+ * The Hebrew text is the summary published by Chubbuck Israel (chubbuckisrael.wixsite.com/12steps); the English is a translation of it.
  */
-export const STEPS_SOURCE = 'https://chubbuckisrael.wixsite.com/12steps';
 
 type Pair = [he: string, en: string];
 

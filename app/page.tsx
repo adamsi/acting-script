@@ -3,10 +3,9 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { useConfig } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
-import { Page, TopBar } from '@/components/ui';
+import { Chevron, Page, TopBar } from '@/components/ui';
 
 function ToolCard({ href, title, desc, tint, icon }: { href: string; title: string; desc: string; tint: string; icon: ReactNode }) {
-  const { lang } = useI18n();
   return (
     <Link href={href} className="card group flex items-center gap-4 p-5 transition-colors hover:border-ink/30 active:bg-card2">
       <span className={`flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl ${tint}`}>{icon}</span>
@@ -14,9 +13,7 @@ function ToolCard({ href, title, desc, tint, icon }: { href: string; title: stri
         <span className="block text-2xl font-bold leading-snug">{title}</span>
         <span className="mt-1 block leading-snug text-dim">{desc}</span>
       </span>
-      <span className="text-2xl text-dim" aria-hidden>
-        {lang === 'he' ? '‹' : '›'}
-      </span>
+      <Chevron className="text-2xl text-dim" />
     </Link>
   );
 }

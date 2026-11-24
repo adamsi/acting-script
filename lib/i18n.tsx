@@ -13,7 +13,6 @@ const dict = {
   toolChubbuckDesc: ['מעלים סצנה ומקבלים קובץ Word עם טבלת עבודה מוכנה למילוי', 'Upload a scene and get a Word file with a worksheet ready to fill in'],
   toolSteps: ['12 השלבים', 'The 12 steps'],
   toolStepsDesc: ['שנים־עשר הכלים של שיטת צ׳באק, בקצרה', 'The twelve tools of the Chubbuck technique, in brief'],
-  stepsSource: ['מקור:', 'Source:'],
   stepsMore: ['להסבר המלא', 'Full explanation'],
   stepWord: ['שלב', 'Step'],
   stepsNotFound: ['השלב לא נמצא.', 'Step not found.'],

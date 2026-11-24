@@ -114,3 +114,17 @@ export function ProgressCard({ title, hint, done, total, estimateMs }: { title: 
     </div>
   );
 }
+
+/**
+ * A chevron that points the way reading goes ("forward": left in Hebrew, right in English) or back.
+ * Drawn, not typed: the characters ‹ and › are mirrored by the browser in right-to-left text.
+ */
+export function Chevron({ back, className = '' }: { back?: boolean; className?: string }) {
+  const { lang } = useI18n();
+  const left = (lang === 'he') !== !!back;
+  return (
+    <svg viewBox="0 0 24 24" width="1em" height="1em" className={`inline-block shrink-0 align-[-0.125em] ${className}`} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden data-chevron={left ? 'left' : 'right'}>
+      <path d={left ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} />
+    </svg>
+  );
+}
