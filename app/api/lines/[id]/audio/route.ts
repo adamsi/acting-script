@@ -69,13 +69,17 @@ export const PUT = route<P>(async (req, { id }, userId) => {
   return json({ has_audio: true, fresh: true, source: 'own', hash, timings });
 });
 
-export const GET = route<P>(async (_req, { id }, userId) => {
+export const GET = route<P>(async (req, { id }, userId) => {
   const sql = await db();
   const [row] = await sql`
     select l.audio, l.audio_mime from lines l join scripts s on s.id = l.script_id
     where l.id = ${id} and s.user_id = ${userId}`;
   if (!row?.audio) return json({ error: 'not found' }, 404);
   return new Response(new Uint8Array(row.audio), {
-    headers: { 'Content-Type': row.audio_mime || 'audio/mpeg', 'Cache-Control': 'private, no-store' },
+    headers: {
+      'Content-Type': row.audio_mime || 'audio/mpeg',
+      // ?h=<hash> names one exact recording (a new recording has a new hash), so it can be kept by the browser.
+      'Cache-Control': new URL(req.url).searchParams.get('h') ? 'private, max-age=31536000, immutable' : 'private, no-store',
+    },
   });
 });

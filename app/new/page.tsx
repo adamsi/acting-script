@@ -107,7 +107,9 @@ export default function NewScene() {
     }
   }
 
-  const charsOk = !!draft && !!draft.my && draft.characters.every((c) => c.name.trim() && (c.key === draft.my || c.voice_id));
+  // A voice is matched to the gender, so every character the app speaks needs one (not when AI voices are off).
+  const genderMissing = !!draft && aiVoices && draft.characters.some((c) => c.key !== draft.my && c.gender === 'unknown');
+  const charsOk = !!draft && !!draft.my && !genderMissing && draft.characters.every((c) => c.name.trim() && (c.key === draft.my || c.voice_id));
 
   return (
     <>
@@ -147,7 +149,7 @@ export default function NewScene() {
             <input className="field" dir="auto" aria-label={t('author')} placeholder={t('author')} value={draft.author} onChange={(e) => setDraft((d) => ({ ...d, author: e.target.value }))} />
             {!recognized && <p className="card border-mine/60 p-4 text-mine">{t('notRecognizedLearn')}</p>}
             <p className="text-xl font-semibold">{t('checkCharacters')}</p>
-            {aiVoices && draft.characters.some((c) => c.gender === 'unknown' && c.key !== draft.my) && <p className="text-dim">{t('genderUnknownHint')}</p>}
+            {aiVoices && draft.characters.some((c) => c.gender === 'unknown' && c.key !== draft.my) && <p className="text-mine">{t('genderUnknownHint')}</p>}
             <CharactersEditor draft={draft} setDraft={setDraft} voices={voices} voicesEnabled={aiVoices} />
           </>
         )}
@@ -180,7 +182,7 @@ export default function NewScene() {
             </button>
             {step === 1 ? (
               <button className="btn btn-primary flex-1 text-xl" disabled={!charsOk} onClick={() => setStep(2)}>
-                {charsOk ? t('next') : t('chooseMe')}
+                {charsOk ? t('next') : !draft.my ? t('chooseMe') : genderMissing ? t('chooseGender') : t('next')}
               </button>
             ) : step === 2 ? (
               <button className="btn btn-primary flex-1 text-xl" disabled={draftProblem(draft)} onClick={() => setStep(3)}>

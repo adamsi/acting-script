@@ -65,12 +65,33 @@ export function clipUrl(line: Pick<Line, 'id' | 'hash'>): Promise<string> {
   const key = `${line.id}:${line.hash}`;
   let p = clipUrls.get(key);
   if (!p) {
-    p = apiBlob(`/lines/${line.id}/audio`).then((b) => URL.createObjectURL(b));
+    // The hash names this exact recording, so the browser may keep it and skip the download next time.
+    p = apiBlob(`/lines/${line.id}/audio?h=${line.hash}`).then((b) => URL.createObjectURL(b));
     p.catch(() => clipUrls.delete(key));
     clipUrls.set(key, p);
   }
   return p;
 }
+/**
+ * Downloads the first recordings the rehearsal will need, starting at line `from`, so that Play
+ * starts speaking at once instead of after the download.
+ */
+export function preloadClips(script: Script, from = 0, count = 3) {
+  let n = 0;
+  for (let i = Math.max(0, from); i < script.lines.length && n < count; i++) {
+    const l = script.lines[i];
+    if (l.character_id === script.my_character_id || !l.has_audio) continue;
+    clipUrl(l).catch(() => {});
+    n++;
+  }
+}
+
+/** Where to start playing a recording: AI voices begin with a pause, which is skipped. */
+export function clipStart(line: Pick<Line, 'timings' | 'source'>): number {
+  const first = line.source === 'ai' ? line.timings?.[0]?.[0] : undefined;
+  return typeof first === 'number' && first > 0.15 ? Math.max(0, first - 0.08) : 0;
+}
+
 export function forgetClip(line: Pick<Line, 'id' | 'hash'>) {
   clipUrls.delete(`${line.id}:${line.hash}`);
 }

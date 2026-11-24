@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { api, ensureAudio, linesToRecord, spokenOf, unlockAudio, useConfig } from '@/lib/client';
+import { api, ensureAudio, linesToRecord, preloadClips, spokenOf, unlockAudio, useConfig } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
 import type { Line, RecordingMode, Script } from '@/lib/types';
 import Player from '@/components/Player';
@@ -61,6 +61,13 @@ function Scene() {
     router.replace(`/s/${id}`);
     setRecording(linesToRecord(script));
   }, [wantsRecorder, script, id, router]);
+
+  // Fetch the first recordings ahead of time, so the rehearsal starts speaking right after Play.
+  useEffect(() => {
+    if (!script?.my_character_id) return;
+    preloadClips(script, 0);
+    if (script.last_line_idx > 0) preloadClips(script, script.last_line_idx);
+  }, [script]);
 
   const nameOf = useMemo(() => new Map(script?.characters.map((c) => [c.id, c.name])), [script]);
 

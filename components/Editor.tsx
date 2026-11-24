@@ -72,7 +72,7 @@ export function CharactersEditor({ draft, setDraft, voices, voicesEnabled = true
             {!mine && voicesEnabled && (
               <div className="flex flex-wrap items-center gap-2">
                 <Select
-                  className="w-28"
+                  className={`w-28 ${c.gender === 'unknown' ? 'border-mine! text-mine!' : ''}`}
                   label={`${t('male')} / ${t('female')}`}
                   value={c.gender}
                   placeholder="?"

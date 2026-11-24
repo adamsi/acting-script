@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { api, clipUrl, getAudio, spokenOf } from '@/lib/client';
+import { api, clipStart, clipUrl, getAudio, spokenOf } from '@/lib/client';
 import { reduce, start, type Kind, type PlayerEvent, type PState } from '@/lib/player';
 import { segments, wordsSpoken } from '@/lib/text';
 import type { Line, Script } from '@/lib/types';
@@ -104,6 +104,8 @@ export default function Player({
         if (cancelled) return;
         a.src = url;
         a.playbackRate = rate;
+        const skip = clipStart(line);
+        if (skip) a.currentTime = skip; // jump over the silence at the start of the recording
         a.addEventListener('ended', onEnded);
         a.addEventListener('error', fail);
         await a.play();
