@@ -50,8 +50,6 @@ export default function Admin() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [price, setPrice] = useState('');
-  const [balance, setBalance] = useState('');
 
   const num = (n: number) => n.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US');
   const date = (iso: string) => new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -62,7 +60,6 @@ export default function Admin() {
     api<Settings>('/admin/settings').then(
       (s) => {
         setSettings(s);
-        setPrice(String(s.pricePerMillion));
         loadUsage();
       },
       (e) => ((e as { status?: number }).status === 403 ? setDenied(true) : setError(e.message))
@@ -89,8 +86,6 @@ export default function Admin() {
     }
   }
 
-  const priceValue = Number(price);
-  const balanceValue = Number(balance);
 
   return (
     <>
@@ -146,44 +141,6 @@ export default function Admin() {
                   <p className="text-sm leading-relaxed text-dim">{t('usageNote')}</p>
                 </>
               )}
-            </section>
-
-            <section className="card flex flex-col gap-4 p-5" aria-label={t('balanceTitle')}>
-              <h2 className="text-2xl font-bold">{t('balanceTitle')}</h2>
-              {usage?.balance ? (
-                <div className="grid grid-cols-2 gap-2">
-                  <Stat label={t('balanceRemaining')} value={money(usage.balance.remaining)} />
-                  <Stat label={t('balanceUsed')} value={money(usage.balance.usedSince)} />
-                  <p className="col-span-2 text-sm text-dim">
-                    {t('balanceAsOf')}
-                    {date(usage.balance.at)}: <span dir="ltr">{money(usage.balance.amount)}</span>
-                  </p>
-                </div>
-              ) : (
-                <p className="text-dim">{t('balanceNotSet')}</p>
-              )}
-              <p className="text-sm leading-relaxed text-dim">{t('balanceDesc')}</p>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm text-dim">{t('balanceInput')}</span>
-                <span className="flex gap-2">
-                  <input className="field flex-1" dir="ltr" inputMode="decimal" value={balance} onChange={(e) => setBalance(e.target.value)} placeholder="0.00" />
-                  <button className="btn" disabled={saving || balance.trim() === '' || !(balanceValue >= 0)} onClick={() => save({ balanceAmount: balanceValue }).then(() => setBalance(''))}>
-                    {t('update')}
-                  </button>
-                </span>
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-sm text-dim">{t('priceInput')}</span>
-                <span className="flex gap-2">
-                  <input className="field flex-1" dir="ltr" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
-                  <button className="btn" disabled={saving || price.trim() === '' || !(priceValue >= 0) || priceValue === settings.pricePerMillion} onClick={() => save({ pricePerMillion: priceValue })}>
-                    {t('update')}
-                  </button>
-                </span>
-              </label>
-              <a className="btn" href="https://platform.inworld.ai/usage" target="_blank" rel="noreferrer">
-                ↗ {t('openInworld')}
-              </a>
             </section>
           </>
         )}
