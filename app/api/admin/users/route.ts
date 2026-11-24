@@ -9,5 +9,5 @@ export const GET = route(async (req, _params, userId) => {
   const url = new URL(req.url);
   const q = (url.searchParams.get('q') ?? '').trim().slice(0, 100);
   const offset = Math.max(0, Math.floor(Number(url.searchParams.get('offset')) || 0));
-  return json(await listUsers(q, offset));
+  return json(await listUsers(userId, q, offset));
 });

@@ -50,6 +50,7 @@ function Users() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [deleting, setDeleting] = useState('');
   const latest = useRef(0);
   const date = (iso: string) => new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -72,6 +73,20 @@ function Users() {
     );
   }, []);
 
+  async function remove(u: AdminUser) {
+    if (!confirm(`${t('usersDeleteConfirm')}\n${u.email ?? u.id}`)) return;
+    setDeleting(u.id);
+    setError('');
+    try {
+      await api(`/admin/users/${u.id}`, { method: 'DELETE' });
+      setUsers((old) => old && old.filter((o) => o.id !== u.id));
+      setTotal((n) => Math.max(0, n - 1));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+    setDeleting('');
+  }
+
   // search as you type, after a short pause
   useEffect(() => {
     const timer = setTimeout(() => fetchPage(q.trim(), 0), q ? 300 : 0);
@@ -89,25 +104,33 @@ function Users() {
         )}
       </div>
       <input className="field" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('usersSearch')} aria-label={t('usersSearch')} />
-      {error ? (
+      {error && (
         <p className="text-red-300" role="alert">
           {error}
         </p>
-      ) : !users ? (
-        <Status />
+      )}
+      {!users ? (
+        error ? null : <Status />
       ) : users.length === 0 ? (
         <p className="text-dim">{t('usersNone')}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {users.map((u) => (
-            <li key={u.id} className="rounded-xl border border-line p-3" data-user={u.id}>
-              <p className="truncate font-bold" dir="ltr" title={u.email ?? u.id}>
-                {u.email ?? u.id}
-              </p>
-              <p className="mt-1 text-sm text-dim">
-                {u.name ? `${u.name} · ` : ''}
-                {t('usersJoined')} {date(u.createdAt)} · {u.scenes} {t('usersScenes')} · {u.worksheets} {t('usersTables')}
-              </p>
+            <li key={u.id} className="flex items-center gap-3 rounded-xl border border-line p-3" data-user={u.id}>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-bold" dir="ltr" title={u.email ?? u.id}>
+                  {u.email ?? u.id}
+                </p>
+                <p className="mt-1 text-sm text-dim">
+                  {u.name ? `${u.name} · ` : ''}
+                  {t('usersJoined')} {date(u.createdAt)} · {u.worksheets} {t('usersTables')}
+                </p>
+              </div>
+              {u.canDelete && (
+                <button className="btn btn-sm btn-danger" disabled={deleting === u.id} onClick={() => remove(u)}>
+                  {t('delete')}
+                </button>
+              )}
             </li>
           ))}
         </ul>

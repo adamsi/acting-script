@@ -49,7 +49,7 @@ const dict = {
   usersSearch: ['חיפוש לפי שם או אימייל', 'Search by name or email'],
   usersNone: ['לא נמצאו משתמשים.', 'No users found.'],
   usersJoined: ['הצטרף/ה', 'Joined'],
-  usersScenes: ['סצנות', 'scenes'],
+  usersDeleteConfirm: ['למחוק את המשתמש לצמיתות, כולל הסצנות, ההקלטות והטבלאות שלו? אי אפשר לבטל.', 'Delete this user for good, with their scenes, recordings and worksheets? This cannot be undone.'],
   usersTables: ['טבלאות', 'tables'],
   showMore: ['הצג עוד', 'Show more'],
   chooseRecording: ['איך להקליט את שאר הדמויות?', 'How should the other characters be recorded?'],

@@ -52,8 +52,9 @@ and an estimated cost, in total (counted from the moment this feature was deploy
 The estimate uses $10 per million characters.
 
 A **Users** section lists the registered accounts from Clerk, newest first: the first ten, "show more"
-for the next ten, and a search by name or email. Each row shows when the account joined and how many
-scenes and worksheets it has saved.
+for the next ten, and a search by name or email. Each row shows when the account joined and how many worksheets
+it saved, and has a **Delete** button (after a confirmation) that removes the Clerk account together with
+its scenes, recordings and worksheets. Admin accounts cannot be deleted from the panel.
 
 ## Stack
 
