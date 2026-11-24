@@ -30,7 +30,10 @@ export async function updateSettings(patch: Partial<AppSettings>): Promise<AppSe
   return getSettings(true);
 }
 
-/** Stops a request that would use an AI voice while AI voices are switched off. */
-export async function assertAiVoices() {
-  if (!(await getSettings()).aiVoices) throw new HttpError(403, 'ai_disabled', 'AI voices are switched off.');
+/**
+ * Stops a request that would use an AI voice while AI voices are switched off. The switch is about the
+ * shared Inworld key: an account with a personal key pays for itself and keeps its AI voices.
+ */
+export async function assertAiVoices(personalKey?: string) {
+  if (!personalKey && !(await getSettings()).aiVoices) throw new HttpError(403, 'ai_disabled', 'AI voices are switched off.');
 }

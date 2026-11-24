@@ -75,6 +75,7 @@ created it; nobody else can read, change or play it.
 | `INWORLD_API_KEY` | The Base64 "Basic" key from the Inworld portal. |
 | `EXTENDED_LIMIT_EMAILS` | Optional. Comma-separated emails whose accounts get the 30-page limit and the admin panel. The email must be verified in Clerk. |
 | `INWORLD_MODEL` | Optional, default `inworld-tts-1.5-max`. |
+| `ADAM_API_KEY` + `ADAM_API_KEY_EMAIL` | Optional. A personal Inworld key and the (verified) email of the account it belongs to: that account's AI recordings are made with this key instead of `INWORLD_API_KEY`, also when AI voices are switched off in the admin panel. |
 | `CLERK_JWT_KEY` | Optional. Clerk's JWKS public key, to verify sessions without a network request. |
 
 ## Deploy on Vercel
