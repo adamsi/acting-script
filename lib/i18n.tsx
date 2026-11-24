@@ -90,7 +90,6 @@ const dict = {
   haveAccountTitle: ['כבר יש לי חשבון', 'I already have an account'],
   signIn: ['כניסה', 'Sign in'],
   newHere: ['פעם ראשונה כאן?', 'New here?'],
-  welcomeHi: ['ברוכים הבאים', 'Welcome'],
   usage: ['סצנות חדשות החודש', 'new scenes this month'],
   limitReached: ['הגעת למגבלה החודשית של סצנות חדשות', 'You have reached this month\'s limit of new scenes'],
   limitResets: ['המגבלה מתאפסת ב־', 'The limit resets on '],

@@ -86,8 +86,7 @@ export default function Landing() {
           <div className="flex flex-col items-center gap-3 text-center">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo.jpg" alt="" width={160} height={160} className="h-40 w-40 rounded-[2rem] shadow-xl shadow-black/40" />
-            <h1 className="text-4xl font-bold leading-tight drop-shadow-lg md:text-bg md:drop-shadow-none">{t('appName')}</h1>
-            <p className="text-xl text-ink/85 drop-shadow md:font-medium md:text-bg/85 md:drop-shadow-none">{t('welcomeHi')}</p>
+            <h1 className="mt-4 text-4xl font-bold leading-tight drop-shadow-lg md:text-bg md:drop-shadow-none">{t('appName')}</h1>
           </div>
 
           <div className="flex flex-col gap-3 rounded-3xl border border-white/15 bg-bg/45 p-4 backdrop-blur-md">
