@@ -8,6 +8,8 @@ export interface RawLine {
   boldPrefix: string;
   /** PDF only: id of the font used for most of the line. */
   font?: string;
+  /** (Nearly) the whole line is italic. */
+  italic?: boolean;
   /** The line is centered on the page / paragraph. */
   centered?: boolean;
 }
@@ -15,6 +17,7 @@ export interface RawLine {
 export interface Run {
   text: string;
   bold: boolean;
+  italic?: boolean;
 }
 
 export interface Speech {

@@ -1,5 +1,6 @@
 'use client';
-import { spokenText } from './text';
+import { useEffect, useState } from 'react';
+import { segments, spokenText } from './text';
 import type { Draft, DraftCharacter, Gender, Line, Script, Voice } from './types';
 
 // ---------- API ----------
@@ -21,6 +22,19 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
 }
 export async function apiBlob(path: string, init?: RequestInit): Promise<Blob> {
   return (await request(path, init)).blob();
+}
+
+/** Switches set in the admin panel, and whether this account is an admin. null while loading. */
+export interface AppConfig {
+  aiVoices: boolean;
+  admin: boolean;
+}
+export function useConfig(): AppConfig | null {
+  const [config, setConfig] = useState<AppConfig | null>(null);
+  useEffect(() => {
+    api<AppConfig>('/config').then(setConfig, () => setConfig({ aiVoices: true, admin: false }));
+  }, []);
+  return config;
 }
 
 // ---------- audio ----------
@@ -72,36 +86,31 @@ export const spokenOf = (l: { text: string; spoken_text: string }) =>
   (l.spoken_text || '').trim() || spokenText(l.text);
 
 /**
- * Creates every missing / outdated recording for the lines the app has to speak.
+ * Creates every missing / outdated AI recording for the lines the app has to speak.
  * Returns the script with updated line status and the number of failures.
  */
 export async function ensureAudio(
   script: Script,
-  opts: { force?: boolean; improve?: boolean; lineIds?: string[]; allCharacters?: boolean },
+  opts: { force?: boolean; lineIds?: string[]; allCharacters?: boolean },
   onProgress?: (done: number, total: number) => void
-): Promise<{ script: Script; failed: number; fixed: number; error: string }> {
+): Promise<{ script: Script; failed: number; error: string }> {
   const only = opts.lineIds ? new Set(opts.lineIds) : null;
   const todo = script.lines.filter((l) => {
     if (only && !only.has(l.id)) return false;
     if (!only && !opts.allCharacters && l.character_id === script.my_character_id) return false;
     if (!spokenOf(l)) return false;
-    return opts.force || !l.fresh || (!!opts.improve && !l.improved);
+    return opts.force || !l.fresh;
   });
   const updates = new Map<string, Partial<Line>>();
   let done = 0;
   let failed = 0;
-  let fixed = 0;
   let error = '';
   onProgress?.(0, todo.length);
   const queue = [...todo];
   const worker = async () => {
     for (let l = queue.shift(); l; l = queue.shift()) {
       try {
-        const { fixes, ...r } = await api<Partial<Line> & { fixes?: unknown[] }>(`/lines/${l.id}/audio`, {
-          method: 'POST',
-          body: JSON.stringify({ force: !!opts.force, improve: !!opts.improve }),
-        });
-        fixed += fixes?.length || 0;
+        const r = await api<Partial<Line>>(`/lines/${l.id}/audio`, { method: 'POST', body: JSON.stringify({ force: !!opts.force }) });
         forgetClip(l);
         updates.set(l.id, r);
       } catch (e) {
@@ -111,14 +120,44 @@ export async function ensureAudio(
       onProgress?.(++done, todo.length);
     }
   };
-  // Pronunciation checks are slow, so more of them run side by side.
-  await Promise.all(Array.from({ length: opts.improve ? 6 : 3 }, worker));
+  await Promise.all([worker(), worker(), worker()]);
   return {
     script: { ...script, lines: script.lines.map((l) => ({ ...l, ...updates.get(l.id) })) },
     failed,
-    fixed,
     error,
   };
+}
+
+/** The lines the app speaks that have no up-to-date recording. */
+export function linesToRecord(script: Script): Line[] {
+  if (!script.my_character_id) return [];
+  return script.lines.filter((l) => l.character_id !== script.my_character_id && !l.fresh && !!spokenOf(l));
+}
+
+/**
+ * Word timings for a recording the user made: the words are spread over its length in proportion
+ * to their size, so the text can still be highlighted while it plays.
+ */
+export function proportionalTimings(text: string, seconds: number): number[][] {
+  const words = segments(text).segs.filter((s) => s.n >= 0).map((s) => s.t.length);
+  const total = words.reduce((a, b) => a + b, 0);
+  if (!total || !(seconds > 0)) return [];
+  let at = 0;
+  return words.map((w) => {
+    const start = (at / total) * seconds;
+    at += w;
+    return [Number(start.toFixed(3)), Number(((at / total) * seconds).toFixed(3))];
+  });
+}
+
+/** Saves a recording the user made of one line with their own voice. */
+export async function uploadOwnRecording(line: Line, blob: Blob, seconds: number): Promise<Partial<Line>> {
+  const form = new FormData();
+  form.append('file', new File([blob], 'line', { type: blob.type || 'audio/webm' }));
+  form.append('timings', JSON.stringify(proportionalTimings(line.text, seconds)));
+  const r = await api<Partial<Line>>(`/lines/${line.id}/audio`, { method: 'PUT', body: form });
+  forgetClip(line);
+  return r;
 }
 
 // ---------- drafts ----------

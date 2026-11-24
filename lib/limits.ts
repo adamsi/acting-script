@@ -6,8 +6,6 @@ import type { ScriptLimits, Usage } from './limits-types';
 export type { ScriptLimits, Usage };
 
 export const MAX_SCENES_PER_MONTH = 20;
-/** Analyses cost money even when the scene is never saved, so they are capped as well. */
-export const MAX_ANALYSES_PER_MONTH = 40;
 export const MAX_FILE_BYTES = 4 * 1024 * 1024;
 /** A full page of dialogue. The word limit stops a single page crammed with a huge amount of text. */
 const WORDS_PER_PAGE = 400;
@@ -26,7 +24,7 @@ export function scriptLimitsFor(verifiedEmail: string | null, extendedEmails: st
   return verifiedEmail && list.includes(verifiedEmail.trim().toLowerCase()) ? EXTENDED_LIMITS : STANDARD_LIMITS;
 }
 
-export type UsageKind = 'create' | 'analyze';
+export type UsageKind = 'create';
 
 /** Counts this calendar month's (UTC) events. Deleting a scene does not give the creation back. */
 async function count(userId: string, kind: UsageKind): Promise<number> {
@@ -51,18 +49,6 @@ export async function getUsage(userId: string, limits: ScriptLimits): Promise<Us
 export async function assertCanCreate(userId: string) {
   if ((await count(userId, 'create')) >= MAX_SCENES_PER_MONTH)
     throw new HttpError(429, 'monthly_limit', `Monthly limit reached: ${MAX_SCENES_PER_MONTH} new scenes per month.`);
-}
-
-/** `forScene`: the upload is for a new rehearsal scene, so the scene limit applies too. */
-export async function assertCanAnalyze(userId: string, forScene = true) {
-  if (forScene) await assertCanCreate(userId);
-  if ((await count(userId, 'analyze')) >= MAX_ANALYSES_PER_MONTH)
-    throw new HttpError(429, 'monthly_limit', 'Monthly limit reached: too many script uploads this month.');
-}
-
-export async function recordUsage(userId: string, kind: UsageKind) {
-  const sql = await db();
-  await sql`insert into usage_events (user_id, kind) values (${userId}, ${kind})`;
 }
 
 export function assertFileSize(bytes: number) {

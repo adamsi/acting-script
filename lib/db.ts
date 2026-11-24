@@ -54,6 +54,14 @@ create table if not exists worksheets (
 );
 create index if not exists worksheets_user_idx on worksheets(user_id, updated_at desc);
 alter table lines add column if not exists audio_improved boolean not null default false;
+create table if not exists app_settings (
+  key text primary key,
+  value jsonb not null,
+  updated_at timestamptz not null default now()
+);
+alter table lines add column if not exists audio_mime text;
+alter table lines add column if not exists audio_source text;
+alter table scripts add column if not exists recording_mode text not null default 'ai';
 create index if not exists lines_script_idx on lines(script_id, idx);
 create index if not exists characters_script_idx on characters(script_id, idx);
 `;

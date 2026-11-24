@@ -167,8 +167,52 @@ function titleAndAuthor(pre: RawLine[]): { title: string; author: string } {
   return { title, author };
 }
 
+const wrapped = (text: string) => /^[(\[][\s\S]*[)\]]$/.test(plain(text));
+const styleOf = (l: RawLine) => `${l.bold ? 'B' : ''}${l.italic ? 'I' : ''}`;
+
+/**
+ * Tells stage directions from dialogue by how they look, for lines that are not in brackets already.
+ * Dialogue has one dominant look in a script; a line inside a speech that looks different is a direction:
+ * bold or italic when the dialogue is not (or the other way round), written in the font of the speaker
+ * names (PDF), or not centered in a script whose dialogue is centered.
+ */
+function directionFinder(lines: RawLine[], markers: Candidate[], first: number): (l: RawLine) => boolean {
+  const markerAt = new Map(markers.map((m) => [m.i, m]));
+  const body = lines.filter((l, i) => i > first && !markerAt.has(i) && !wrapped(l.text));
+  if (body.length < 3) return () => false;
+
+  const weight = new Map<string, number>();
+  const fontWeight = new Map<string, number>();
+  for (const l of body) {
+    weight.set(styleOf(l), (weight.get(styleOf(l)) ?? 0) + l.text.length);
+    if (l.font) fontWeight.set(l.font, (fontWeight.get(l.font) ?? 0) + l.text.length);
+  }
+  const top = (m: Map<string, number>) => [...m].sort((a, b) => b[1] - a[1])[0]?.[0];
+  const style = top(weight);
+  const bodyFont = top(fontWeight);
+
+  // The font of names that stand alone on their line, when it differs from the dialogue font.
+  const nameFonts = new Map<string, number>();
+  for (const m of markers) if (m.kind === 'header' && lines[m.i].font) nameFonts.set(lines[m.i].font!, (nameFonts.get(lines[m.i].font!) ?? 0) + 1);
+  const nameFont = top(nameFonts);
+  const fontTells = !!nameFont && !!bodyFont && nameFont !== bodyFont;
+
+  const aligned = body.filter((l) => l.centered !== undefined);
+  const centeredDialogue = aligned.length >= 3 && aligned.filter((l) => l.centered).length / aligned.length >= 0.6;
+
+  return (l) => !wrapped(l.text) && (styleOf(l) !== style || (fontTells && l.font === nameFont) || (centeredDialogue && l.centered === false));
+}
+
+export interface ParseOptions {
+  /**
+   * Put stage directions that are not in brackets into ( ), so that they are shown but can be told
+   * apart from what is said. Off by default: the text is then kept exactly as written.
+   */
+  markDirections?: boolean;
+}
+
 /** Finds the speakers in a script. Without a recognisable pattern every line becomes its own speech. */
-export function parseScript(lines: RawLine[]): ParsedScript {
+export function parseScript(lines: RawLine[], options: ParseOptions = {}): ParsedScript {
   const markers = lines.length ? pickMarkers(lines) : null;
   if (!markers) {
     const { title } = titleAndAuthor(lines.slice(0, 1));
@@ -178,27 +222,40 @@ export function parseScript(lines: RawLine[]): ParsedScript {
   const at = new Map(markers.map((m) => [m.i, m]));
   const first = Math.min(...markers.map((m) => m.i));
   const { title, author } = titleAndAuthor(lines.slice(0, first));
+  const isDirection = options.markDirections ? directionFinder(lines, markers, first) : () => false;
 
   // The first spelling of a name is the one shown.
   const shown = new Map<string, string>();
   const speeches: Speech[] = [];
   let current: Speech | null = null;
+  // Consecutive direction lines share one pair of brackets.
+  let direction: string[] = [];
   const add = (s: Speech, t: string) => {
     s.text = s.text ? `${s.text} ${t}` : t;
+  };
+  const flush = () => {
+    if (current && direction.length) add(current, `(${direction.join(' ')})`);
+    direction = [];
   };
 
   for (let i = first; i < lines.length; i++) {
     const m = at.get(i);
     if (m) {
+      flush();
       if (!shown.has(m.key)) shown.set(m.key, m.name);
       current = { speaker: shown.get(m.key)!, text: '' };
       speeches.push(current);
       if (m.direction) add(current, m.direction);
       if (m.rest) add(current, m.rest);
     } else if (current) {
-      add(current, lines[i].text);
+      if (isDirection(lines[i])) direction.push(lines[i].text);
+      else {
+        flush();
+        add(current, lines[i].text);
+      }
     }
   }
+  flush();
 
   return { title, author, recognized: true, speeches: speeches.filter((s) => s.text.trim()) };
 }

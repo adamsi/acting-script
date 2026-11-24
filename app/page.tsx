@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { useConfig } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
 import { Page, TopBar } from '@/components/ui';
 
@@ -24,6 +25,7 @@ const stroke = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeL
 
 export default function Home() {
   const { t } = useI18n();
+  const config = useConfig();
   return (
     <>
       <TopBar title={t('appName')} />
@@ -58,6 +60,11 @@ export default function Home() {
             </svg>
           }
         />
+        {config?.admin && (
+          <Link href="/admin" className="btn mt-4 self-start">
+            ⚙ {t('admin')}
+          </Link>
+        )}
       </Page>
     </>
   );

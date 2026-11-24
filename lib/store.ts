@@ -1,6 +1,6 @@
 import { HttpError } from './errors';
 import { db } from './db';
-import { audioHash } from './inworld';
+import { audioHash, ownAudioHash } from './inworld';
 import { assertWordCount, type ScriptLimits } from './limits';
 import { spokenText } from './text';
 import type { Character, Draft, Line, Script, ScriptSummary } from './types';
@@ -23,7 +23,7 @@ export async function listScripts(userId: string): Promise<ScriptSummary[]> {
 export async function getScript(userId: string, id: string): Promise<Script | null> {
   const sql = await db();
   const [s] = await sql`
-    select id, title, author, language, my_character_id, last_line_idx, original_name
+    select id, title, author, language, my_character_id, recording_mode, last_line_idx, original_name
     from scripts where id = ${id} and user_id = ${userId}`;
   if (!s) return null;
   const characters = (await sql`
@@ -32,10 +32,13 @@ export async function getScript(userId: string, id: string): Promise<Script | nu
   const voiceOf = new Map(characters.map((c) => [c.id, c.voice_id]));
   const rows = await sql`
     select id, idx, character_id, text, spoken_text, audio is not null as has_audio,
-           audio_hash, audio_timings, audio_improved
+           audio_hash, audio_timings, audio_source
     from lines where script_id = ${id} order by idx`;
   const lines: Line[] = rows.map((r) => {
-    const hash = audioHash(spokenOf(r as never), voiceOf.get(r.character_id) || '');
+    // A recording is up to date when it was made from the current text (and, for AI, the current voice).
+    const own = r.audio_source === 'own';
+    const spoken = spokenOf(r as never);
+    const hash = own ? ownAudioHash(spoken) : audioHash(spoken, voiceOf.get(r.character_id) || '');
     return {
       id: r.id,
       idx: r.idx,
@@ -44,7 +47,7 @@ export async function getScript(userId: string, id: string): Promise<Script | nu
       spoken_text: r.spoken_text,
       has_audio: r.has_audio,
       fresh: r.has_audio && r.audio_hash === hash,
-      improved: r.has_audio && r.audio_hash === hash && r.audio_improved,
+      source: r.has_audio ? (own ? 'own' : 'ai') : null,
       hash,
       timings: r.audio_timings,
     };
@@ -129,6 +132,8 @@ export async function saveScript(
     if (existingChars.size) await tx`delete from characters where id in ${tx([...existingChars])}`;
 
     await tx`update scripts set my_character_id = ${charId.get(d.my) ?? null} where id = ${scriptId}`;
+    if (d.recording_mode === 'ai' || d.recording_mode === 'own')
+      await tx`update scripts set recording_mode = ${d.recording_mode} where id = ${scriptId}`;
     return scriptId;
   });
 }

@@ -1,7 +1,7 @@
 'use client';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { api, apiBlob, draftFromScript, ensureAudio, playBlob, unlockAudio } from '@/lib/client';
+import { api, apiBlob, draftFromScript, ensureAudio, playBlob, unlockAudio, useConfig } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
 import type { Draft, DraftLine, Script, Voice } from '@/lib/types';
 import { CharactersEditor, LinesEditor, draftProblem } from '@/components/Editor';
@@ -10,6 +10,7 @@ import { Overlay, Page, Status, TopBar } from '@/components/ui';
 export default function Settings() {
   const { id } = useParams<{ id: string }>();
   const { t } = useI18n();
+  const aiVoices = useConfig()?.aiVoices !== false;
   const router = useRouter();
   const [draft, setDraftState] = useState<Draft | null>(null);
   const [voices, setVoices] = useState<Voice[]>([]);
@@ -79,8 +80,7 @@ export default function Settings() {
       const s = await persist(draft);
       const saved = s.lines[idx];
       setBusyLine(saved.id);
-      // A manual re-record gets the pronunciation check too (unless the user wrote the pronunciation).
-      const r = await ensureAudio(s, { force: true, improve: s.language === 'he', lineIds: [saved.id] });
+      const r = await ensureAudio(s, { force: true, lineIds: [saved.id] });
       if (r.failed) throw new Error(`${t('recordingFailed')}: ${r.error}`);
       await playBlob(await apiBlob(`/lines/${saved.id}/audio`));
     } catch (e) {
@@ -107,15 +107,17 @@ export default function Settings() {
         <input className="field" dir="auto" aria-label={t('author')} placeholder={t('author')} value={draft.author} onChange={(e) => setDraft((d) => ({ ...d, author: e.target.value }))} />
 
         <h2 className="mt-2 text-2xl font-bold">{t('characters')}</h2>
-        <CharactersEditor draft={draft} setDraft={setDraft} voices={voices} />
+        <CharactersEditor draft={draft} setDraft={setDraft} voices={voices} voicesEnabled={aiVoices} />
 
         <h2 className="mt-4 text-2xl font-bold">{t('lines')}</h2>
-        <LinesEditor draft={draft} setDraft={setDraft} onRegenerate={regenerateLine} busyLine={busyLine} />
+        <LinesEditor draft={draft} setDraft={setDraft} onRegenerate={aiVoices ? regenerateLine : undefined} busyLine={busyLine} />
 
         <div className="mt-6 flex flex-col gap-3">
-          <button className="btn" disabled={invalid || saving} onClick={() => confirm(t('regenerateAllConfirm')) && save(true)}>
-            ↻ {t('regenerateAll')}
-          </button>
+          {aiVoices && (
+            <button className="btn" disabled={invalid || saving} onClick={() => confirm(t('regenerateAllConfirm')) && save(true)}>
+              ↻ {t('regenerateAll')}
+            </button>
+          )}
           <button className="btn btn-danger" onClick={remove}>
             {t('deleteScene')}
           </button>

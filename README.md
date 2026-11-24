@@ -19,23 +19,33 @@ there are two tools:
 
 ## How script learning works
 
-1. **Upload** a PDF / `.docx` / `.txt`. OpenAI extracts the title, characters (with gender) and every line in order. Stage directions stay in `(parentheses)` — shown, never spoken.
-2. **Confirm** the characters (name, gender, voice with preview), choose **who you are**, then confirm the lines. Nothing is saved before you confirm.
-3. Recordings for the other characters are generated with **Inworld TTS** and stored in the database, including word timings. They are created once; Play never re-creates them.
-4. **Play**: the current line is shown zoomed in, words are highlighted as they are spoken, upcoming lines are listed below. On your line the app waits for a tap / Enter / Space.
+1. **Upload** a PDF, Word, ODT, RTF, HTML or text file. The file is read in the browser and the
+   speakers are found by code from the layout (no AI). Stage directions stay in `(parentheses)`;
+   narration lines that are not in brackets (told apart by how they look: italic, or aligned
+   differently from the dialogue) are put in brackets too. Whatever is in brackets is shown, never spoken.
+2. **Confirm** the characters (name, gender, voice with preview), choose **who you are**, then confirm
+   the lines. Gender is only filled in when the name says so ("הוא", "אמא"); otherwise the user chooses.
+3. **Choose how the other characters are recorded**: AI voices (the default, **Inworld TTS**) or the
+   user's own voice. With own voice, a recorder goes through the other characters' lines one by one
+   (record, listen, record again, save). Recordings are stored in the database and are created once;
+   Play never re-creates them.
+4. **Play**: the current line is shown zoomed in, words are highlighted as they are spoken, upcoming
+   lines are listed below. On your line the app waits for a tap / Enter / Space.
 
 Extras: start from any line, continue where you stopped, memorize mode (hides your lines),
-speech speed, replay last cue, pause, change who you are, edit lines, re-record a line or all
-lines, open the original file.
+speech speed, replay last cue, pause, change who you are, switch between AI and own recordings,
+edit lines, re-record a line or all lines, open the original file.
 
-### Hebrew pronunciation
+**No AI language model is used anywhere in the app.** The only paid service is Inworld (voices).
+Hebrew pronunciation of a line can be fixed by hand in Settings: write a phonetic spelling or
+`/IPA/` in the line's pronunciation field and re-record.
 
-Unvocalized Hebrew is ambiguous and the TTS engine guesses some words wrong (and ignores nikud).
-Inworld reports the phonemes it actually spoke, so **Improve Hebrew pronunciation** on the scene
-page sends each recorded line's phonemes, with scene context, to OpenAI, which returns only the
-mispronounced words in IPA; those words are re-spoken from inline `/IPA/`, which the engine
-pronounces literally. It takes a few minutes per scene. A line can also be fixed by hand in
-Settings: write a phonetic spelling or `/IPA/` in the line's pronunciation field and re-record.
+## Admin panel
+
+`/admin` is open only to the accounts listed in `EXTENDED_LIMIT_EMAILS` (the email must be verified).
+It has a switch for **AI voices (Inworld)**. When it is off no request is sent to Inworld: new scenes
+can only be recorded in the user's own voice, voice pickers are hidden, and AI recordings that already
+exist keep playing.
 
 ## Stack
 
@@ -62,13 +72,9 @@ created it; nobody else can read, change or play it.
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk Dashboard → API keys. |
 | `CLERK_SECRET_KEY` | Clerk Dashboard → API keys. |
 | `DB_URL` | Supabase **Transaction pooler** connection string (port 6543). The direct `db.<ref>.supabase.co:5432` string is IPv6-only and does not work on Vercel. |
-| `OPENAI_API_KEY` | Used to analyze uploaded scripts and to check Hebrew pronunciation. |
 | `INWORLD_API_KEY` | The Base64 "Basic" key from the Inworld portal. |
-| `EXTENDED_LIMIT_EMAILS` | Optional. Comma-separated emails whose accounts get the 30-page limit. The email must be verified in Clerk. |
-| `OPENAI_MODEL` | Optional. Model for reading uploaded scripts, default `gpt-5.4-mini`. |
-| `PRONUNCIATION_MODEL` | Optional. Model for the Hebrew pronunciation check, default `gpt-5.4-mini`. `gpt-5.4` costs about twice as much and catches more mispronounced words. |
+| `EXTENDED_LIMIT_EMAILS` | Optional. Comma-separated emails whose accounts get the 30-page limit and the admin panel. The email must be verified in Clerk. |
 | `INWORLD_MODEL` | Optional, default `inworld-tts-1.5-max`. |
-| `PRONUNCIATION_EFFORT` | Optional, OpenAI reasoning effort for the pronunciation check, default `medium`. |
 | `CLERK_JWT_KEY` | Optional. Clerk's JWKS public key, to verify sessions without a network request. |
 
 ## Deploy on Vercel

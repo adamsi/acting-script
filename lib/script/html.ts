@@ -10,6 +10,10 @@ function isBold(el: HTMLElement): boolean {
   return w === 'bold' || w === 'bolder' || (!!w && Number(w) >= 600);
 }
 
+function isItalic(el: HTMLElement): boolean {
+  return el.tagName === 'I' || el.tagName === 'EM' || el.style?.fontStyle === 'italic';
+}
+
 const isCentered = (el: HTMLElement) => el.tagName === 'CENTER' || el.style?.textAlign === 'center' || el.getAttribute('align') === 'center';
 
 /** Reads HTML (also what Word files are converted to): one line per block element and per <br>. */
@@ -25,10 +29,10 @@ export function htmlToLines(html: string): RawLine[] {
     runs = [];
   };
 
-  const walk = (node: Node, bold: boolean) => {
+  const walk = (node: Node, bold: boolean, italic = false) => {
     if (node.nodeType === Node.TEXT_NODE) {
       const text = node.nodeValue ?? '';
-      if (text) runs.push({ text, bold });
+      if (text) runs.push({ text, bold, italic });
       return;
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return;
@@ -45,7 +49,8 @@ export function htmlToLines(html: string): RawLine[] {
       centered = isCentered(el) || (el.tagName !== 'DIV' && outerCentered);
     }
     const b = bold || isBold(el);
-    el.childNodes.forEach((child) => walk(child, b));
+    const it = italic || isItalic(el);
+    el.childNodes.forEach((child) => walk(child, b, it));
     if (block) {
       flush();
       centered = outerCentered;

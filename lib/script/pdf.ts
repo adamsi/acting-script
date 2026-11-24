@@ -15,7 +15,7 @@ interface PdfLine {
   y: number;
   text: string;
   font: string;
-  centered: boolean;
+  centered: boolean | undefined;
   page: number;
   /** distance of the line from the top (0) / bottom (1) of its page */
   vpos: number;
@@ -176,7 +176,8 @@ export async function readPdf(data: ArrayBuffer): Promise<RawLine[]> {
       const font = [...chars].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
       const left = Math.min(...solid.map((i) => i.x));
       const right = Math.max(...solid.map((i) => i.x + i.w));
-      const centered = Math.abs((left + right) / 2 - (x0 + pageW / 2)) < pageW * 0.04 && right - left < pageW * 0.8;
+      // A line that fills the width looks the same whether the text is centered or not: unknown.
+      const centered = right - left >= pageW * 0.75 ? undefined : Math.abs((left + right) / 2 - (x0 + pageW / 2)) < pageW * 0.04;
       lines.push({ y: g.y, text, font, centered, page: p, vpos: 1 - (g.y - y0) / pageH });
     }
   }

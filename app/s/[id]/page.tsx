@@ -1,11 +1,12 @@
 'use client';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { api, ensureAudio, spokenOf, unlockAudio } from '@/lib/client';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import { api, ensureAudio, linesToRecord, spokenOf, unlockAudio, useConfig } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
-import type { Script } from '@/lib/types';
+import type { Line, RecordingMode, Script } from '@/lib/types';
 import Player from '@/components/Player';
+import Recorder from '@/components/Recorder';
 import Select from '@/components/Select';
 import { Overlay, Page, Status, TopBar } from '@/components/ui';
 
@@ -30,25 +31,36 @@ function usePref<T>(key: string, initial: T): [T, (v: T) => void] {
   ];
 }
 
-export default function Scene() {
+function Scene() {
   const { id } = useParams<{ id: string }>();
   const { t } = useI18n();
   const router = useRouter();
+  const params = useSearchParams();
   const [script, setScript] = useState<Script | null>(null);
   const [error, setError] = useState('');
   const [progress, setProgress] = useState<[number, number] | null>(null);
-  const [improving, setImproving] = useState(false);
-  const [note, setNote] = useState('');
   const [playFrom, setPlayFrom] = useState<number | null>(null);
+  /** lines being recorded with the microphone (null: recorder closed) */
+  const [recording, setRecording] = useState<Line[] | null>(null);
   const [warn, setWarn] = useState('');
   const [memorize, setMemorize] = usePref('memorize', false);
   const [rate, setRate] = usePref('rate', 1);
+  const config = useConfig();
+  const aiVoices = config?.aiVoices !== false;
 
   const load = useCallback(() => {
     setError('');
     api<Script>(`/scripts/${id}`).then(setScript, (e) => setError(e.message));
   }, [id]);
   useEffect(load, [load]);
+
+  // Coming from the new-scene wizard with "record myself": open the recorder once the scene is loaded.
+  const wantsRecorder = params.get('record') === '1';
+  useEffect(() => {
+    if (!wantsRecorder || !script) return;
+    router.replace(`/s/${id}`);
+    setRecording(linesToRecord(script));
+  }, [wantsRecorder, script, id, router]);
 
   const nameOf = useMemo(() => new Map(script?.characters.map((c) => [c.id, c.name])), [script]);
 
@@ -57,15 +69,13 @@ export default function Scene() {
     if (!script?.my_character_id) return;
     unlockAudio(); // must happen inside the tap
     setWarn('');
-    setNote('');
     setPlayFrom(Math.min(from, script.lines.length - 1));
   }
 
-  /** Creates the missing / outdated recordings. Runs only when the user asks for it. */
-  async function record() {
+  /** Creates the missing / outdated AI recordings. Runs only when the user asks for it. */
+  async function createAi() {
     if (!script) return;
     setWarn('');
-    setNote('');
     setProgress([0, 0]);
     const r = await ensureAudio(script, {}, (d, n) => setProgress([d, n]));
     setScript(r.script);
@@ -73,36 +83,16 @@ export default function Scene() {
     if (r.failed) setWarn(`${t('recordingFailed')} (${r.failed}): ${r.error}`);
   }
 
-  async function improve() {
-    if (!script) return;
-    setWarn('');
-    setNote('');
-    setImproving(true);
-    setProgress([0, 0]);
-    const r = await ensureAudio(script, { improve: true }, (d, n) => setProgress([d, n]));
-    setScript(r.script);
-    setProgress(null);
-    setImproving(false);
-    const unchecked = r.script.lines.some((l) => l.character_id !== r.script.my_character_id && l.fresh && !l.improved);
-    if (r.failed) setWarn(`${t('recordingFailed')} (${r.failed}): ${r.error}`);
-    else if (unchecked) setWarn(t('improveFailed'));
-    if (!unchecked || r.fixed) setNote(`${t('improvedDone')} · ${r.fixed} ${t('improvedWords')}`);
-  }
-
   async function setMe(characterId: string) {
-    async function remove() {
-    if (!confirm(t('deleteSceneConfirm'))) return;
-    try {
-      await api(`/scripts/${id}`, { method: 'DELETE' });
-      router.replace('/learn');
-    } catch (e) {
-      setWarn(e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  if (!script) return;
+    if (!script) return;
     setScript({ ...script, my_character_id: characterId });
     await api(`/scripts/${id}`, { method: 'PATCH', body: JSON.stringify({ my_character_id: characterId }) }).catch(() => {});
+  }
+
+  async function setMode(recording_mode: RecordingMode) {
+    if (!script || script.recording_mode === recording_mode) return;
+    setScript({ ...script, recording_mode });
+    await api(`/scripts/${id}`, { method: 'PATCH', body: JSON.stringify({ recording_mode }) }).catch(() => {});
   }
 
   async function remove() {
@@ -115,23 +105,29 @@ export default function Scene() {
     }
   }
 
-  if (!script) return <><TopBar title="" back="/learn" /><Status error={error} onRetry={load} /></>;
+  if (!script)
+    return (
+      <>
+        <TopBar title="" back="/learn" />
+        <Status error={error} onRetry={load} />
+      </>
+    );
 
-  const toRecord = script.my_character_id
-    ? script.lines.filter((l) => l.character_id !== script.my_character_id && !l.fresh && !!spokenOf(l)).length
-    : 0;
-  const canImprove =
-    !toRecord &&
-    script.language === 'he' &&
-    !!script.my_character_id &&
-    script.lines.some((l) => l.character_id !== script.my_character_id && !l.improved && !!l.text.replace(/\([^)]*\)/g, '').trim());
+  const missing = linesToRecord(script);
+  // With AI voices switched off (admin panel) the lines can only be recorded by the user.
+  const own = script.recording_mode === 'own' || !aiVoices;
+  const others = script.my_character_id ? script.lines.filter((l) => l.character_id !== script.my_character_id && !!spokenOf(l)) : [];
   const resumeAt = script.last_line_idx > 0 && script.last_line_idx < script.lines.length ? script.last_line_idx : 0;
 
   return (
     <>
       <TopBar title={script.title} back="/learn" />
       <Page>
-        {script.author && <p className="text-dim" dir="auto">{script.author}</p>}
+        {script.author && (
+          <p className="text-dim" dir="auto">
+            {script.author}
+          </p>
+        )}
 
         <div className="card flex items-center gap-3 p-4">
           <span className="text-xl font-semibold">{t('iAm')}</span>
@@ -152,26 +148,55 @@ export default function Scene() {
             {t('continueFrom')} {resumeAt + 1}
           </button>
         )}
-        {warn && <p className="text-red-300" dir="auto" role="alert">{warn}</p>}
-        {note && <p className="text-other" role="status">✓ {note}</p>}
-        {toRecord > 0 && (
-          <div className="card flex flex-col gap-3 border-mine/60 p-4">
-            <p>
-              {toRecord} {t('needRecording')}
+        {warn && (
+          <p className="text-red-300" dir="auto" role="alert">
+            {warn}
+          </p>
+        )}
+
+        <div className="card flex flex-col gap-3 p-4">
+          <div className="flex items-center gap-3">
+            <span className="flex-1 text-lg font-semibold">{t('recordingsBy')}</span>
+            <div className={`rounded-xl border border-line p-1 ${aiVoices ? 'flex' : 'hidden'}`} role="group" aria-label={t('recordingsBy')}>
+              {(['ai', 'own'] as const).map((m) => (
+                <button
+                  key={m}
+                  className={`min-h-10 rounded-lg px-3 text-base font-semibold ${script.recording_mode === m ? 'bg-mine text-[#1a1300]' : 'text-dim'}`}
+                  aria-pressed={script.recording_mode === m}
+                  onClick={() => setMode(m)}
+                >
+                  {m === 'ai' ? t('modeAi') : t('modeOwn')}
+                </button>
+              ))}
+            </div>
+          </div>
+          {!aiVoices && <p className="text-dim">{t('aiOff')}</p>}
+          {missing.length > 0 && (
+            <p className="text-mine">
+              {missing.length} {t('needRecording')}
             </p>
-            <button className="btn" onClick={record}>
-              🎙 {t('createRecordings')}
-            </button>
-          </div>
-        )}
-        {canImprove && (
-          <div className="card flex flex-col gap-3 p-4">
-            <p className="text-dim">{t('improveHint')}</p>
-            <button className="btn" onClick={improve}>
-              ✨ {t('improve')}
-            </button>
-          </div>
-        )}
+          )}
+          {own ? (
+            <>
+              {missing.length > 0 && (
+                <button className="btn btn-primary" onClick={() => setRecording(missing)}>
+                  🎙 {t('recordMine')} ({missing.length})
+                </button>
+              )}
+              {others.length > 0 && missing.length < others.length && (
+                <button className="btn" onClick={() => setRecording(others)}>
+                  ↺ {t('recordAllAgain')}
+                </button>
+              )}
+            </>
+          ) : (
+            missing.length > 0 && (
+              <button className="btn btn-primary" onClick={createAi}>
+                ✨ {t('createAi')}
+              </button>
+            )
+          )}
+        </div>
 
         <div className="card flex flex-col gap-4 p-4">
           <label className="flex items-center gap-3 text-lg">
@@ -184,7 +209,7 @@ export default function Scene() {
               className="w-28"
               label={t('speed')}
               value={String(rate)}
-              options={RATES.map((r) => ({ value: String(r), label: `\u200e×${r}` }))}
+              options={RATES.map((r) => ({ value: String(r), label: `‎×${r}` }))}
               onChange={(v) => setRate(Number(v))}
             />
           </div>
@@ -209,7 +234,9 @@ export default function Scene() {
               <li key={l.id}>
                 <button className={`card w-full p-3 text-start active:bg-card2 ${mine ? 'border-mine/50' : ''}`} onClick={() => play(i)}>
                   <span className={`font-bold ${mine ? 'text-mine' : 'text-other'}`}>{nameOf.get(l.character_id)}</span>
-                  <span className="ms-2 text-sm text-dim" dir="ltr">#{i + 1}</span>
+                  <span className="ms-2 text-sm text-dim" dir="ltr">
+                    #{i + 1}
+                  </span>
                   <span className="mt-1 block text-lg leading-snug" dir="auto">
                     {l.text}
                   </span>
@@ -224,8 +251,16 @@ export default function Scene() {
         </button>
       </Page>
 
-      {progress && (
-        <Overlay title={improving ? t('improving') : t('recording')} hint={improving ? t('improvingHint') : undefined} done={progress[0]} total={progress[1]} />
+      {progress && <Overlay title={t('recording')} done={progress[0]} total={progress[1]} />}
+      {recording && (
+        <Recorder
+          script={script}
+          lines={recording}
+          onClose={(updates) => {
+            setRecording(null);
+            setScript((s) => (s ? { ...s, lines: s.lines.map((l) => ({ ...l, ...updates.get(l.id) })) } : s));
+          }}
+        />
       )}
       {playFrom !== null && (
         <Player
@@ -240,5 +275,14 @@ export default function Scene() {
         />
       )}
     </>
+  );
+}
+
+export default function Page_() {
+  // useSearchParams needs a Suspense boundary.
+  return (
+    <Suspense>
+      <Scene />
+    </Suspense>
   );
 }

@@ -1,4 +1,6 @@
 export type Gender = 'male' | 'female' | 'unknown';
+/** How the other characters' lines are recorded: AI voices (Inworld) or the user's own voice. */
+export type RecordingMode = 'ai' | 'own';
 
 export interface Character {
   id: string;
@@ -17,8 +19,8 @@ export interface Line {
   has_audio: boolean;
   /** audio exists and matches the current text + voice */
   fresh: boolean;
-  /** pronunciation of this recording was checked and corrected (or the user wrote it) */
-  improved: boolean;
+  /** who made the recording: an AI voice or the user's own microphone */
+  source: RecordingMode | null;
   hash: string;
   timings: number[][] | null;
 }
@@ -29,6 +31,7 @@ export interface Script {
   author: string;
   language: 'he' | 'en';
   my_character_id: string | null;
+  recording_mode: RecordingMode;
   last_line_idx: number;
   original_name: string | null;
   characters: Character[];
@@ -66,6 +69,7 @@ export interface Draft {
   characters: DraftCharacter[];
   lines: DraftLine[];
   my: string; // DraftCharacter.key
+  recording_mode?: RecordingMode;
 }
 
 export interface Voice {

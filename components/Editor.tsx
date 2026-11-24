@@ -7,7 +7,7 @@ import type { Draft, DraftCharacter, DraftLine, Gender, Voice } from '@/lib/type
 
 type SetDraft = (fn: (d: Draft) => Draft) => void;
 
-export function CharactersEditor({ draft, setDraft, voices }: { draft: Draft; setDraft: SetDraft; voices: Voice[] }) {
+export function CharactersEditor({ draft, setDraft, voices, voicesEnabled = true }: { draft: Draft; setDraft: SetDraft; voices: Voice[]; voicesEnabled?: boolean }) {
   const { t, lang } = useI18n();
   const [previewing, setPreviewing] = useState('');
 
@@ -69,7 +69,7 @@ export function CharactersEditor({ draft, setDraft, voices }: { draft: Draft; se
             >
               {mine ? `✓ ${t('thisIsMe')}` : t('thisIsMe')}
             </button>
-            {!mine && (
+            {!mine && voicesEnabled && (
               <div className="flex flex-wrap items-center gap-2">
                 <Select
                   className="w-28"

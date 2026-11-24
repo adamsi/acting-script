@@ -16,7 +16,7 @@ export const PUT = route<P>(async (req, { id }, userId) => {
   return json(await getScript(userId, id));
 });
 
-/** Small updates: rehearsal position, who I am. */
+/** Small updates: rehearsal position, who I am, how lines are recorded. */
 export const PATCH = route<P>(async (req, { id }, userId) => {
   const body = await req.json();
   const sql = await db();
@@ -27,6 +27,8 @@ export const PATCH = route<P>(async (req, { id }, userId) => {
     await sql`update scripts set my_character_id = ${body.my_character_id}
               where id = ${id} and user_id = ${userId} and exists (select 1 from characters
                 where id = ${body.my_character_id} and script_id = ${id})`;
+  if (body.recording_mode === 'ai' || body.recording_mode === 'own')
+    await sql`update scripts set recording_mode = ${body.recording_mode} where id = ${id} and user_id = ${userId}`;
   return json({ ok: true });
 });
 

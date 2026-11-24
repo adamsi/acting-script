@@ -26,6 +26,8 @@ export function makeLine(runs: Run[], extra: Partial<RawLine> = {}): RawLine | n
   const total = runs.reduce((n, r) => n + visible(r.text), 0);
   const boldChars = runs.reduce((n, r) => n + (r.bold ? visible(r.text) : 0), 0);
   const bold = total > 0 && boldChars / total >= 0.8;
+  const italicChars = runs.reduce((n, r) => n + (r.italic ? visible(r.text) : 0), 0);
+  const italic = total > 0 && italicChars / total >= 0.8;
 
   let boldPrefix = '';
   if (!bold) {
@@ -36,7 +38,7 @@ export function makeLine(runs: Run[], extra: Partial<RawLine> = {}): RawLine | n
     }
     boldPrefix = faithful(lead);
   }
-  return { text, bold, boldPrefix, ...extra };
+  return { text, bold, boldPrefix, ...(italic ? { italic } : {}), ...extra };
 }
 
 /** Plain text: `**bold**` marks become bold runs (Markdown and hand-typed scripts). */
