@@ -143,33 +143,6 @@ export default function Admin() {
                     <Stat label={t('usageRecordings')} value={num(usage.total.recordings)} />
                     <Stat label={t('usageScenes')} value={num(usage.total.scenes)} />
                   </div>
-                  <h3 className="text-lg font-bold">{t('usageUsers')}</h3>
-                  {usage.users.length === 0 ? (
-                    <p className="text-dim">{t('usageNone')}</p>
-                  ) : (
-                    <ul className="flex flex-col gap-2">
-                      {usage.users.map((u) => (
-                        <li key={u.userId} className="rounded-xl border border-line p-3" data-user={u.userId}>
-                          <div className="flex items-baseline gap-3">
-                            <p className="min-w-0 flex-1 truncate font-bold" dir="ltr" title={u.email ?? u.userId}>
-                              {u.email ?? u.userId}
-                            </p>
-                            <p className="text-xl font-bold tabular-nums text-mine" dir="ltr">
-                              {money(u.cost)}
-                            </p>
-                          </div>
-                          <p className="mt-1 text-sm text-dim">
-                            {num(u.characters)} {t('usageChars')} · {num(u.recordings)} {t('usageRecordings')} · {num(u.previews)} {t('usagePreviews')} · {num(u.scenes)} {t('usageScenes')}
-                          </p>
-                          {u.personalCharacters > 0 && (
-                            <p className="mt-1 text-sm text-other">
-                              + {num(u.personalCharacters)} {t('usageChars')} {t('usageOwnKey')}
-                            </p>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                   <p className="text-sm leading-relaxed text-dim">{t('usageNote')}</p>
                 </>
               )}

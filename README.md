@@ -48,7 +48,7 @@ can only be recorded in the user's own voice, voice pickers are hidden, and AI r
 exist keep playing.
 
 It also shows **Inworld usage this month** — characters sent, recordings, voice previews, new scenes
-and an estimated cost, in total and per user (counted from the moment this feature was deployed) —
+and an estimated cost, in total (counted from the moment this feature was deployed) —
 and an **estimated remaining credit**. Inworld has no API for reading an account's balance, so the
 admin types in the balance shown at platform.inworld.ai and the panel subtracts what the app has
 used since. The price per million characters used for the estimates is editable (default $10).
