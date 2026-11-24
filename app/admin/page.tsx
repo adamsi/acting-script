@@ -1,8 +1,9 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/client';
 import { useI18n } from '@/lib/i18n';
 import type { UsageReport } from '@/lib/usage';
+import type { AdminUser, AdminUserPage } from '@/lib/users';
 import { Page, Status, TopBar } from '@/components/ui';
 
 interface Settings {
@@ -40,6 +41,85 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const money = (n: number) => `$${n < 1 ? n.toFixed(3) : n.toFixed(2)}`;
+
+/** Registered accounts: the first ten, a search box, and "show more". */
+function Users() {
+  const { t, lang } = useI18n();
+  const [q, setQ] = useState('');
+  const [users, setUsers] = useState<AdminUser[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const latest = useRef(0);
+  const date = (iso: string) => new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+
+  const fetchPage = useCallback((query: string, offset: number) => {
+    const id = ++latest.current;
+    setLoading(true);
+    setError('');
+    api<AdminUserPage>(`/admin/users?q=${encodeURIComponent(query)}&offset=${offset}`).then(
+      (page) => {
+        if (id !== latest.current) return; // a newer search is on its way
+        setUsers((old) => (offset && old ? [...old, ...page.users.filter((u) => !old.some((o) => o.id === u.id))] : page.users));
+        setTotal(page.total);
+        setLoading(false);
+      },
+      (e) => {
+        if (id !== latest.current) return;
+        setError(e instanceof Error ? e.message : String(e));
+        setLoading(false);
+      }
+    );
+  }, []);
+
+  // search as you type, after a short pause
+  useEffect(() => {
+    const timer = setTimeout(() => fetchPage(q.trim(), 0), q ? 300 : 0);
+    return () => clearTimeout(timer);
+  }, [q, fetchPage]);
+
+  return (
+    <section className="card flex flex-col gap-4 p-5" aria-label={t('usersTitle')}>
+      <div className="flex items-baseline gap-3">
+        <h2 className="min-w-0 flex-1 text-2xl font-bold">{t('usersTitle')}</h2>
+        {users && (
+          <p className="text-dim tabular-nums" data-users-total>
+            {total.toLocaleString(lang === 'he' ? 'he-IL' : 'en-US')}
+          </p>
+        )}
+      </div>
+      <input className="field" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('usersSearch')} aria-label={t('usersSearch')} />
+      {error ? (
+        <p className="text-red-300" role="alert">
+          {error}
+        </p>
+      ) : !users ? (
+        <Status />
+      ) : users.length === 0 ? (
+        <p className="text-dim">{t('usersNone')}</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {users.map((u) => (
+            <li key={u.id} className="rounded-xl border border-line p-3" data-user={u.id}>
+              <p className="truncate font-bold" dir="ltr" title={u.email ?? u.id}>
+                {u.email ?? u.id}
+              </p>
+              <p className="mt-1 text-sm text-dim">
+                {u.name ? `${u.name} · ` : ''}
+                {t('usersJoined')} {date(u.createdAt)} · {u.scenes} {t('usersScenes')} · {u.worksheets} {t('usersTables')}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+      {users && users.length < total && (
+        <button className="btn" disabled={loading} onClick={() => fetchPage(q.trim(), users.length)}>
+          {t('showMore')}
+        </button>
+      )}
+    </section>
+  );
+}
 
 /** Admin panel: only for the accounts listed in EXTENDED_LIMIT_EMAILS (the server checks). */
 export default function Admin() {
@@ -142,6 +222,8 @@ export default function Admin() {
                 </>
               )}
             </section>
+
+            <Users />
           </>
         )}
       </Page>

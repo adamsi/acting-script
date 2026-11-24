@@ -51,6 +51,10 @@ It also shows **Inworld usage this month** — characters sent, recordings, voic
 and an estimated cost, in total (counted from the moment this feature was deployed).
 The estimate uses $10 per million characters.
 
+A **Users** section lists the registered accounts from Clerk, newest first: the first ten, "show more"
+for the next ten, and a search by name or email. Each row shows when the account joined and how many
+scenes and worksheets it has saved.
+
 ## Stack
 
 Next.js (App Router) — frontend and API routes in one project, deployable to Vercel as is.
