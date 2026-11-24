@@ -60,6 +60,19 @@ export default function Home() {
             </svg>
           }
         />
+        <ToolCard
+          href="/steps"
+          title={t('toolSteps')}
+          desc={t('toolStepsDesc')}
+          tint="bg-emerald-400/15 text-emerald-300"
+          icon={
+            <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden {...stroke}>
+              {/* steps going up */}
+              <path d="M6 40h9v-9h9v-9h9v-9h9" />
+              <path d="M6 40h36" />
+            </svg>
+          }
+        />
         {config?.admin && (
           <Link href="/admin" className="btn mt-4 self-start">
             ⚙ {t('admin')}
