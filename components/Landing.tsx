@@ -93,7 +93,7 @@ export default function Landing() {
               title={t('haveAccountTitle')}
               subtitle={t('signIn')}
               icon={
-                <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden {...stroke}>
+                <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden {...stroke} className="rtl:-scale-x-100">
                   <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
                   <path d="M4 12h11" />
                   <path d="M11 8l4 4-4 4" />
