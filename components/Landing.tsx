@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { LangMenu } from './LangMenu';
+import { Chevron } from './ui';
 
 /**
  * Animated evening-sky clouds (Vanta.js). Loaded only on this page; without WebGL,
@@ -48,7 +49,6 @@ function Clouds() {
 }
 
 function Choice({ href, primary, title, subtitle, icon }: { href: string; primary?: boolean; title: string; subtitle: string; icon: ReactNode }) {
-  const { lang } = useI18n();
   return (
     <Link
       href={href}
@@ -61,9 +61,7 @@ function Choice({ href, primary, title, subtitle, icon }: { href: string; primar
         <span className="block text-2xl font-bold leading-tight">{title}</span>
         <span className={`block ${primary ? 'text-[#1a1300]/75' : 'text-ink/75'}`}>{subtitle}</span>
       </span>
-      <span className="text-2xl opacity-70" aria-hidden>
-        {lang === 'he' ? '‹' : '›'}
-      </span>
+      <Chevron className="text-2xl opacity-70" />
     </Link>
   );
 }

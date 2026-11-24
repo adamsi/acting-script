@@ -11,7 +11,10 @@ export function TopBar({ title, back, right }: { title: string; back?: string; r
     <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-line bg-bg/95 px-4 py-3 backdrop-blur">
       {back && (
         <Link href={back} className="btn min-h-11 px-3 text-xl" aria-label={t('back')}>
-          {lang === 'he' ? '→' : '←'}
+          {/* back: towards where reading starts - right in Hebrew, left in English. Drawn, so the browser cannot flip it. */}
+          <svg viewBox="0 0 24 24" width="1.1em" height="1.1em" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden data-back-arrow={lang === 'he' ? 'right' : 'left'}>
+            <path d={lang === 'he' ? 'M4 12h16M13 5l7 7-7 7' : 'M20 12H4M11 5l-7 7 7 7'} />
+          </svg>
         </Link>
       )}
       <h1 className="min-w-0 flex-1 truncate text-2xl font-bold">{title}</h1>
