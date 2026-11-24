@@ -65,3 +65,22 @@ export async function personalInworldKey(userId: string): Promise<string | undef
   if (!key || !email) return undefined;
   return (await verifiedEmails(userId)).includes(email) ? key : undefined;
 }
+
+/** Email addresses of users, for the admin's usage report. Users that cannot be looked up are left out. */
+export async function emailsOf(userIds: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  if (!userIds.length) return out;
+  try {
+    const client = await clerkClient();
+    for (let i = 0; i < userIds.length; i += 100) {
+      const page = await client.users.getUserList({ userId: userIds.slice(i, i + 100), limit: 100 });
+      for (const u of page.data) {
+        const primary = u.emailAddresses.find((e) => e.id === u.primaryEmailAddressId) ?? u.emailAddresses[0];
+        if (primary) out.set(u.id, primary.emailAddress);
+      }
+    }
+  } catch (e) {
+    console.error('could not read users from Clerk; the report shows user ids', e);
+  }
+  return out;
+}

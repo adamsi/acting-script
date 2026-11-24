@@ -4,7 +4,10 @@ import { normalizeHebrew } from './pronounce';
 import type { Gender, Voice } from './types';
 
 const BASE = 'https://api.inworld.ai';
-export const TTS_MODEL = process.env.INWORLD_MODEL || 'inworld-tts-1.5-max';
+/** Inworld's current flagship model. The 1.5 models that were used before are deprecated. */
+export const TTS_MODEL = process.env.INWORLD_MODEL || 'inworld-tts-2';
+/** Models recordings may have been made with before; those recordings stay valid. */
+const EARLIER_MODELS = ['inworld-tts-1.5-max', 'inworld-tts-1.5-mini'];
 const MAX_CHARS = 1800;
 
 /** `apiKey`: a personal key for this request; otherwise the shared INWORLD_API_KEY is used. */
@@ -20,8 +23,17 @@ export function ownAudioHash(spoken: string): string {
 }
 
 /** Identifies an AI recording: changes whenever the spoken text, voice or model changes. */
-export function audioHash(spoken: string, voiceId: string): string {
-  return createHash('sha1').update(`v2|${TTS_MODEL}|${voiceId}|${spoken}`).digest('hex');
+export function audioHash(spoken: string, voiceId: string, model = TTS_MODEL): string {
+  return createHash('sha1').update(`v2|${model}|${voiceId}|${spoken}`).digest('hex');
+}
+
+/**
+ * Is a stored AI recording still the recording of this text and voice? True also for recordings
+ * made with an earlier model, so changing the model does not make every scene need re-recording.
+ */
+export function isCurrentAiRecording(storedHash: string | null, spoken: string, voiceId: string): boolean {
+  if (!storedHash) return false;
+  return [TTS_MODEL, ...EARLIER_MODELS].some((m) => audioHash(spoken, voiceId, m) === storedHash);
 }
 
 let voiceCache: { at: number; voices: Voice[] } | null = null;
@@ -66,6 +78,11 @@ export interface Synth {
   timings: number[][];
 }
 
+/** A whole text: also how many characters were sent to Inworld (what it bills by). */
+export interface SynthResult extends Synth {
+  characters: number;
+}
+
 async function synthOne(text: string, voiceId: string, apiKey?: string): Promise<Synth & { end: number }> {
   const res = await fetch(`${BASE}/tts/v1/voice`, {
     method: 'POST',
@@ -96,15 +113,17 @@ async function synthOne(text: string, voiceId: string, apiKey?: string): Promise
 }
 
 /** Speaks `text` with an Inworld voice. `apiKey`: a personal key to use (and bill) instead of the shared one. */
-export async function synthesize(text: string, voiceId: string, apiKey?: string): Promise<Synth> {
+export async function synthesize(text: string, voiceId: string, apiKey?: string): Promise<SynthResult> {
   const parts: Buffer[] = [];
   const timings: number[][] = [];
   let offset = 0;
+  let characters = 0;
   for (const c of chunks(normalizeHebrew(text))) {
     const r = await synthOne(c, voiceId, apiKey);
+    characters += c.length;
     parts.push(r.audio);
     for (const [s, e] of r.timings) timings.push([s + offset, e + offset]);
     offset += r.end;
   }
-  return { audio: Buffer.concat(parts), timings };
+  return { audio: Buffer.concat(parts), timings, characters };
 }

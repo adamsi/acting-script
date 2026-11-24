@@ -54,6 +54,9 @@ create table if not exists worksheets (
 );
 create index if not exists worksheets_user_idx on worksheets(user_id, updated_at desc);
 alter table lines add column if not exists audio_improved boolean not null default false;
+alter table usage_events add column if not exists amount int not null default 0;
+alter table usage_events add column if not exists personal boolean not null default false;
+create index if not exists usage_events_time_idx on usage_events(created_at);
 create table if not exists app_settings (
   key text primary key,
   value jsonb not null,

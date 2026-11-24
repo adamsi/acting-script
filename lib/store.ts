@@ -1,6 +1,6 @@
 import { HttpError } from './errors';
 import { db } from './db';
-import { audioHash, ownAudioHash } from './inworld';
+import { audioHash, isCurrentAiRecording, ownAudioHash } from './inworld';
 import { assertWordCount, type ScriptLimits } from './limits';
 import { spokenText } from './text';
 import type { Character, Draft, Line, Script, ScriptSummary } from './types';
@@ -38,7 +38,10 @@ export async function getScript(userId: string, id: string): Promise<Script | nu
     // A recording is up to date when it was made from the current text (and, for AI, the current voice).
     const own = r.audio_source === 'own';
     const spoken = spokenOf(r as never);
-    const hash = own ? ownAudioHash(spoken) : audioHash(spoken, voiceOf.get(r.character_id) || '');
+    const voice = voiceOf.get(r.character_id) || '';
+    const fresh = r.has_audio && (own ? r.audio_hash === ownAudioHash(spoken) : isCurrentAiRecording(r.audio_hash, spoken, voice));
+    // The hash names the stored recording (it is the browser's cache key); without one, the recording that would be made.
+    const hash = fresh ? r.audio_hash : own ? ownAudioHash(spoken) : audioHash(spoken, voice);
     return {
       id: r.id,
       idx: r.idx,
@@ -46,7 +49,7 @@ export async function getScript(userId: string, id: string): Promise<Script | nu
       text: r.text,
       spoken_text: r.spoken_text,
       has_audio: r.has_audio,
-      fresh: r.has_audio && r.audio_hash === hash,
+      fresh,
       source: r.has_audio ? (own ? 'own' : 'ai') : null,
       hash,
       timings: r.audio_timings,

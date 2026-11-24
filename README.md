@@ -47,6 +47,12 @@ It has a switch for **AI voices (Inworld)**. When it is off no request is sent t
 can only be recorded in the user's own voice, voice pickers are hidden, and AI recordings that already
 exist keep playing.
 
+It also shows **Inworld usage this month** — characters sent, recordings, voice previews, new scenes
+and an estimated cost, in total and per user (counted from the moment this feature was deployed) —
+and an **estimated remaining credit**. Inworld has no API for reading an account's balance, so the
+admin types in the balance shown at platform.inworld.ai and the panel subtracts what the app has
+used since. The price per million characters used for the estimates is editable (default $10).
+
 ## Stack
 
 Next.js (App Router) — frontend and API routes in one project, deployable to Vercel as is.
@@ -74,7 +80,7 @@ created it; nobody else can read, change or play it.
 | `DB_URL` | Supabase **Transaction pooler** connection string (port 6543). The direct `db.<ref>.supabase.co:5432` string is IPv6-only and does not work on Vercel. |
 | `INWORLD_API_KEY` | The Base64 "Basic" key from the Inworld portal. |
 | `EXTENDED_LIMIT_EMAILS` | Optional. Comma-separated emails whose accounts get the 30-page limit and the admin panel. The email must be verified in Clerk. |
-| `INWORLD_MODEL` | Optional, default `inworld-tts-1.5-max`. |
+| `INWORLD_MODEL` | Optional, default `inworld-tts-2`. Recordings made earlier with the 1.5 models stay valid. |
 | `ADAM_API_KEY` + `ADAM_API_KEY_EMAIL` | Optional. A personal Inworld key and the (verified) email of the account it belongs to: that account's AI recordings are made with this key instead of `INWORLD_API_KEY`, also when AI voices are switched off in the admin panel. |
 | `CLERK_JWT_KEY` | Optional. Clerk's JWKS public key, to verify sessions without a network request. |
 

@@ -1,7 +1,8 @@
 import { json, route } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { HttpError } from '@/lib/errors';
-import { audioHash, ownAudioHash, synthesize } from '@/lib/inworld';
+import { audioHash, isCurrentAiRecording, ownAudioHash, synthesize } from '@/lib/inworld';
+import { recordTts } from '@/lib/usage';
 import { personalInworldKey } from '@/lib/plan';
 import { assertAiVoices } from '@/lib/settings';
 import { spokenOf } from '@/lib/store';
@@ -39,9 +40,10 @@ export const POST = route<P>(async (req, { id }, userId) => {
   const apiKey = await personalInworldKey(userId);
   await assertAiVoices(apiKey);
   if (!line.voice_id) return json({ error: 'This character has no voice selected' }, 400);
-  if (!force && line.has_audio && line.audio_source !== 'own' && line.audio_hash === hash)
-    return json({ has_audio: true, fresh: true, source: 'ai', hash, timings: line.audio_timings });
-  const { audio, timings } = await synthesize(spoken, line.voice_id, apiKey);
+  if (!force && line.has_audio && line.audio_source !== 'own' && isCurrentAiRecording(line.audio_hash, spoken, line.voice_id))
+    return json({ has_audio: true, fresh: true, source: 'ai', hash: line.audio_hash, timings: line.audio_timings });
+  const { audio, timings, characters } = await synthesize(spoken, line.voice_id, apiKey);
+  await recordTts(userId, 'tts', characters, !!apiKey);
   await sql`update lines set audio = ${audio}, audio_timings = ${sql.json(timings)}, audio_hash = ${hash},
             audio_mime = 'audio/mpeg', audio_source = 'ai' where id = ${id}`;
   return json({ has_audio: true, fresh: true, source: 'ai', hash, timings });
