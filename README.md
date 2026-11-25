@@ -40,6 +40,15 @@ edit lines, re-record a line or all lines, open the original file.
 Hebrew pronunciation of a line can be fixed by hand in Settings: write a phonetic spelling or
 `/IPA/` in the line's pronunciation field and re-record.
 
+## Character arc (ניתוח מהלך של דמות)
+
+The actor adds one or more script files (a film, a play, or the episodes of a series) and writes the
+name of their character. The files are read in the browser; the text of each file is sent to Gemini,
+which returns a summary of every scene the character is in or is talked about in (first person, up to
+four lines, facts only). The app adds the four questions after each scene (מטרת הסצינה, ביטים מרכזיים,
+איך אני נכנס/ת, איך אני יוצא/ת) and offers the result as a Word file or as text to copy. Nothing is
+saved on the server. Limit: 60 analysed files per user per month, 12 files at a time.
+
 ## Admin panel
 
 `/admin` is open only to the accounts listed in `EXTENDED_LIMIT_EMAILS` (the email must be verified).
@@ -82,6 +91,8 @@ created it; nobody else can read, change or play it.
 | `CLERK_SECRET_KEY` | Clerk Dashboard → API keys. |
 | `DB_URL` | Supabase **Transaction pooler** connection string (port 6543). The direct `db.<ref>.supabase.co:5432` string is IPv6-only and does not work on Vercel. |
 | `INWORLD_API_KEY` | The Base64 "Basic" key from the Inworld portal. |
+| `GEMINI_API_KEY` | Needed for **ניתוח מהלך של דמות** (character arc). A Gemini API key from Google AI Studio. Without it that tool shows "not set up"; the rest of the app works. |
+| `GEMINI_MODEL` | Optional. A fixed Gemini model. By default the app asks Google for the models the key can use and takes the newest stable `flash` one. |
 | `EXTENDED_LIMIT_EMAILS` | Optional. Comma-separated emails whose accounts get the 30-page limit and the admin panel. The email must be verified in Clerk. |
 | `INWORLD_MODEL` | Optional, default `inworld-tts-2`. Recordings made earlier with the 1.5 models stay valid. |
 | `ADAM_API_KEY` + `ADAM_API_KEY_EMAIL` | Optional. A personal Inworld key and the (verified) email of the account it belongs to: that account's AI recordings are made with this key instead of `INWORLD_API_KEY`, also when AI voices are switched off in the admin panel. |

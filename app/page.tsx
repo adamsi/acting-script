@@ -58,6 +58,22 @@ export default function Home() {
           }
         />
         <ToolCard
+          href="/arc"
+          title={t('toolArc')}
+          desc={t('toolArcDesc')}
+          tint="bg-rose-400/15 text-rose-300"
+          icon={
+            <svg viewBox="0 0 48 48" width="44" height="44" aria-hidden {...stroke}>
+              {/* a path through the scenes */}
+              <path d="M8 38c6-2 6-12 12-13s6 6 12 3 4-16 8-18" />
+              <circle cx="8" cy="38" r="2.5" />
+              <circle cx="20" cy="25" r="2.5" />
+              <circle cx="32" cy="28" r="2.5" />
+              <circle cx="40" cy="10" r="2.5" />
+            </svg>
+          }
+        />
+        <ToolCard
           href="/steps"
           title={t('toolSteps')}
           desc={t('toolStepsDesc')}

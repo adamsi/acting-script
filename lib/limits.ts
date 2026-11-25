@@ -24,7 +24,9 @@ export function scriptLimitsFor(verifiedEmail: string | null, extendedEmails: st
   return verifiedEmail && list.includes(verifiedEmail.trim().toLowerCase()) ? EXTENDED_LIMITS : STANDARD_LIMITS;
 }
 
-export type UsageKind = 'create';
+export type UsageKind = 'create' | 'arc';
+/** Scripts a user can send to the character analysis (an AI request each) per month. */
+export const MAX_ANALYSES_PER_MONTH = 60;
 
 /** Counts this calendar month's (UTC) events. Deleting a scene does not give the creation back. */
 async function count(userId: string, kind: UsageKind): Promise<number> {
@@ -90,4 +92,14 @@ export async function assertPdfSize(file: Buffer, limits: ScriptLimits) {
     // No readable text layer (e.g. a scan): the page limit above is what bounds it.
   }
   assertWordCount(text, limits);
+}
+
+export async function assertCanAnalyze(userId: string) {
+  if ((await count(userId, 'arc')) >= MAX_ANALYSES_PER_MONTH)
+    throw new HttpError(429, 'arc_limit', `Monthly limit reached: ${MAX_ANALYSES_PER_MONTH} analysed scripts per month.`);
+}
+
+export async function recordAnalysis(userId: string) {
+  const sql = await db();
+  await sql`insert into usage_events (user_id, kind) values (${userId}, 'arc')`;
 }
