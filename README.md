@@ -46,8 +46,10 @@ The actor adds one or more script files (a film, a play, or the episodes of a se
 name of their character. The files are read in the browser; the text of each file is sent to Gemini,
 which returns a summary of every scene the character is in or is talked about in (first person, up to
 four lines, facts only). The app adds the four questions after each scene (מטרת הסצינה, ביטים מרכזיים,
-איך אני נכנס/ת, איך אני יוצא/ת) and offers the result as a Word file or as text to copy. Nothing is
-saved on the server. Limit: 60 analysed files per user per month, 12 files at a time.
+איך אני נכנס/ת, איך אני יוצא/ת). Each analysis is saved per user (up to 100): the tool opens on the list
+of saved analyses, and on an analysis's page the actor can write the answers under each scene; they
+are saved automatically and included in the Word file and the copied text. An analysis can be deleted.
+Limit: 60 analysed files per user per month, 12 files at a time.
 
 ## Admin panel
 

@@ -57,6 +57,15 @@ alter table lines add column if not exists audio_improved boolean not null defau
 alter table usage_events add column if not exists amount int not null default 0;
 alter table usage_events add column if not exists personal boolean not null default false;
 create index if not exists usage_events_time_idx on usage_events(created_at);
+create table if not exists arcs (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  character text not null,
+  parts jsonb not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create index if not exists arcs_user_idx on arcs(user_id, updated_at desc);
 create table if not exists app_settings (
   key text primary key,
   value jsonb not null,

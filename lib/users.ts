@@ -70,4 +70,5 @@ export async function deleteUser(me: string, id: string): Promise<void> {
   const sql = await db();
   await sql`delete from scripts where user_id = ${id}`;
   await sql`delete from worksheets where user_id = ${id}`;
+  await sql`delete from arcs where user_id = ${id}`;
 }

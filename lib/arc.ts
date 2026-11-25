@@ -5,6 +5,8 @@ export interface ArcScene {
   number: string;
   /** up to four lines, in the first person, facts and behaviour only */
   summary: string;
+  /** what the actor wrote under each of ARC_FIELDS (same order); missing until they write something */
+  answers?: string[];
 }
 
 /** One uploaded script (a film, a play, or one episode of a series). */
@@ -16,6 +18,22 @@ export interface ArcPart {
 export const MAX_ARC_FILES = 12;
 export const MAX_ARC_CHARS = 400_000;
 export const MAX_ARC_NAME = 60;
+
+/** A saved analysis, as listed. */
+export interface ArcSummary {
+  id: string;
+  character: string;
+  files: number;
+  scenes: number;
+  updated_at: string;
+}
+
+export interface SavedArc {
+  id: string;
+  character: string;
+  parts: ArcPart[];
+  updated_at: string;
+}
 
 /** The questions after every scene, for the actor to answer. */
 export const ARC_FIELDS = ['מטרת הסצינה:', 'ביטים מרכזיים:', 'איך אני נכנס/ת לסצינה:', 'איך אני יוצא/ת מהסצינה:'];
@@ -31,8 +49,7 @@ export function arcToText(character: string, parts: ArcPart[]): string {
     if (parts.length > 1) out.push(partTitle(part.fileName), '');
     for (const s of part.scenes) {
       out.push(sceneTitle(s.number), s.summary, '');
-      for (const f of ARC_FIELDS) out.push(f, '');
-      out.push('');
+      ARC_FIELDS.forEach((f, i) => out.push(f, s.answers?.[i]?.trim() ?? '', ''));
     }
   }
   return out.join('\n').trimEnd() + '\n';
@@ -55,10 +72,10 @@ export async function arcToDocx(character: string, parts: ArcPart[]): Promise<Bl
     for (const s of part.scenes) {
       children.push(p(sceneTitle(s.number), { bold: true, size: 26, before: 240 }));
       for (const line of s.summary.split('\n')) children.push(p(line));
-      for (const f of ARC_FIELDS) {
+      ARC_FIELDS.forEach((f, i) => {
         children.push(p(f, { bold: true, before: 160 }));
-        children.push(p(''));
-      }
+        for (const line of (s.answers?.[i]?.trim() ?? '').split('\n')) children.push(p(line));
+      });
     }
   }
   const doc = new Document({ sections: [{ properties: { page: { margin: { top: 1000, bottom: 1000, left: 1100, right: 1100 } } }, children }] });
