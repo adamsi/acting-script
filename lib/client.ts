@@ -1,4 +1,5 @@
 'use client';
+import { useAuth } from '@clerk/nextjs';
 import { useEffect, useState } from 'react';
 import { segments, spokenText } from './text';
 import type { Draft, DraftCharacter, Gender, Line, Script, Voice } from './types';
@@ -29,11 +30,38 @@ export interface AppConfig {
   aiVoices: boolean;
   admin: boolean;
 }
+/** The last answer, kept for the session and (per account) on the device, so it is there at once on the next load. */
+let lastConfig: { userId: string; config: AppConfig } | null = null;
+const configKey = (userId: string) => `config:${userId}`;
+
 export function useConfig(): AppConfig | null {
-  const [config, setConfig] = useState<AppConfig | null>(null);
+  const { userId } = useAuth();
+  const [config, setConfig] = useState<AppConfig | null>(lastConfig && lastConfig.userId === userId ? lastConfig.config : null);
   useEffect(() => {
-    api<AppConfig>('/config').then(setConfig, () => setConfig({ aiVoices: true, admin: false }));
-  }, []);
+    if (!userId) return;
+    // show what was true last time right away (the admin button, the AI switch), then check with the server
+    if (lastConfig?.userId === userId) setConfig(lastConfig.config);
+    else {
+      try {
+        const saved = JSON.parse(localStorage.getItem(configKey(userId)) || 'null');
+        if (saved && typeof saved.admin === 'boolean' && typeof saved.aiVoices === 'boolean') setConfig({ aiVoices: saved.aiVoices, admin: saved.admin });
+      } catch {}
+    }
+    let current = true;
+    api<AppConfig>('/config').then(
+      (c) => {
+        lastConfig = { userId, config: c };
+        try {
+          localStorage.setItem(configKey(userId), JSON.stringify(c));
+        } catch {}
+        if (current) setConfig(c);
+      },
+      () => current && setConfig((c) => c ?? { aiVoices: true, admin: false })
+    );
+    return () => {
+      current = false;
+    };
+  }, [userId]);
   return config;
 }
 
