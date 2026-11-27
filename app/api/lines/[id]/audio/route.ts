@@ -12,7 +12,7 @@ export const maxDuration = 60;
 type P = { id: string };
 
 /** A recording the user makes of one line: a few megabytes are plenty for a speech. */
-const MAX_OWN_BYTES = 3 * 1024 * 1024;
+const MAX_OWN_BYTES = 4 * 1024 * 1024;
 
 async function loadLine(id: string, userId: string) {
   const sql = await db();
@@ -57,8 +57,13 @@ export const PUT = route<P>(async (req, { id }, userId) => {
   const file = form.get('file');
   if (!(file instanceof File) || !file.size) return json({ error: 'file is required' }, 400);
   if (file.size > MAX_OWN_BYTES) throw new HttpError(413, 'file_too_large', 'The recording is too long.');
-  const mime = (file.type || '').split(';')[0];
-  if (!/^audio\/(webm|mp4|mpeg|ogg|wav|x-m4a|aac)$/.test(mime)) return json({ error: 'not an audio recording' }, 400);
+  // recorded in the app, or an audio file the user uploaded (phones do not always name the type)
+  const byName: Record<string, string> = { mp3: 'audio/mpeg', m4a: 'audio/mp4', mp4: 'audio/mp4', aac: 'audio/aac', wav: 'audio/wav', ogg: 'audio/ogg', oga: 'audio/ogg', opus: 'audio/ogg', webm: 'audio/webm' };
+  const alias: Record<string, string> = { 'audio/mp3': 'audio/mpeg', 'audio/x-m4a': 'audio/mp4', 'audio/m4a': 'audio/mp4', 'audio/x-wav': 'audio/wav', 'audio/wave': 'audio/wav', 'audio/vnd.wave': 'audio/wav', 'audio/x-aac': 'audio/aac', 'audio/opus': 'audio/ogg', 'video/mp4': 'audio/mp4', 'video/webm': 'audio/webm' };
+  let mime = (file.type || '').split(';')[0].toLowerCase();
+  mime = alias[mime] ?? mime;
+  if (!mime || mime === 'application/octet-stream') mime = byName[file.name.toLowerCase().split('.').pop() ?? ''] ?? '';
+  if (!/^audio\/(webm|mp4|mpeg|ogg|wav|aac)$/.test(mime)) throw new HttpError(415, 'bad_audio', 'This is not an audio file the app can play.');
 
   let timings: number[][] | null = null;
   try {

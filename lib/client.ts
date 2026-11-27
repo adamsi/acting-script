@@ -174,7 +174,8 @@ export function proportionalTimings(text: string, seconds: number): number[][] {
 /** Saves a recording the user made of one line with their own voice. */
 export async function uploadOwnRecording(line: Line, blob: Blob, seconds: number): Promise<Partial<Line>> {
   const form = new FormData();
-  form.append('file', new File([blob], 'line', { type: blob.type || 'audio/webm' }));
+  // an uploaded file keeps its name (the server reads the type from it when the browser gives none)
+  form.append('file', blob instanceof File ? blob : new File([blob], 'line', { type: blob.type || 'audio/webm' }));
   form.append('timings', JSON.stringify(proportionalTimings(line.text, seconds)));
   const r = await api<Partial<Line>>(`/lines/${line.id}/audio`, { method: 'PUT', body: form });
   forgetClip(line);

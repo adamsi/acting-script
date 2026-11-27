@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useI18n } from '@/lib/i18n';
+import { errorText, useI18n } from '@/lib/i18n';
 import { uploadOwnRecording } from '@/lib/client';
 import { segments } from '@/lib/text';
 import type { Line, Script } from '@/lib/types';
@@ -9,6 +9,8 @@ type Phase = 'idle' | 'recording' | 'recorded' | 'saving';
 
 /** Longest single recording; it stops by itself after that. */
 const MAX_SECONDS = 180;
+/** Largest audio file that can be uploaded for one line (the hosting limits a request to about 4.5MB). */
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 function pickMime(): string {
   const options = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
@@ -89,6 +91,30 @@ export default function Recorder({ script, lines, onClose }: { script: Script; l
     if (recorder.current?.state === 'recording') recorder.current.stop();
   }
 
+  /** An audio file from the device instead of a new recording: it becomes the take, to listen to and save. */
+  async function upload(file: File | undefined) {
+    if (!file) return;
+    setError('');
+    player.current?.pause();
+    if (file.size > MAX_UPLOAD_BYTES) return setError(t('recUploadTooBig'));
+    const url = URL.createObjectURL(file);
+    const length = await new Promise<number>((resolve) => {
+      const a = new Audio();
+      const finish = (n: number) => resolve(isFinite(n) && n > 0 ? n : 0);
+      a.preload = 'metadata';
+      a.onloadedmetadata = () => finish(a.duration);
+      a.onerror = () => finish(0);
+      setTimeout(() => finish(a.duration), 4000);
+      a.src = url;
+    });
+    if (!length) {
+      URL.revokeObjectURL(url);
+      return setError(t('recUploadBad'));
+    }
+    setTake({ blob: file, url, seconds: length });
+    setPhase('recorded');
+  }
+
   function listen() {
     if (!take) return;
     player.current ??= new Audio();
@@ -112,7 +138,7 @@ export default function Recorder({ script, lines, onClose }: { script: Script; l
       updates.current.set(line.id, await uploadOwnRecording(line, take.blob, take.seconds));
       next();
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e, t));
       setPhase('recorded');
     }
   }
@@ -180,9 +206,23 @@ export default function Recorder({ script, lines, onClose }: { script: Script; l
                     <span className="h-8 w-8 rounded-full bg-white" />
                   </button>
                   <span className="text-lg font-semibold">{t('recStart')}</span>
-                  <button className="btn btn-sm" onClick={next}>
-                    {t('recSkip')}
-                  </button>
+                  <div className="flex w-full gap-2">
+                    <label className="btn flex-1 cursor-pointer">
+                      ⬆ {t('recUpload')}
+                      <input
+                        type="file"
+                        className="sr-only"
+                        accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.opus,.webm"
+                        onChange={(e) => {
+                          upload(e.target.files?.[0]);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                    <button className="btn flex-1" onClick={next}>
+                      {t('recSkip')}
+                    </button>
+                  </div>
                 </>
               )}
               {phase === 'recording' && (
