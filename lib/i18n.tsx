@@ -112,7 +112,7 @@ const dict = {
   recAgain: ['הקלט שוב', 'Record again'],
   recSaveNext: ['שמור והמשך', 'Save & continue'],
   recSkip: ['דלג', 'Skip'],
-  recUpload: ['העלאת הקלטה', 'Upload a recording'],
+  recUpload: ['העלאת קובץ', 'Upload a file'],
   recUploadTooBig: ['קובץ ההקלטה גדול מדי (עד 4MB).', 'The audio file is too large (max 4MB).'],
   recUploadBad: ['לא ניתן לנגן את הקובץ הזה. נסו קובץ שמע אחר (mp3, m4a, wav).', 'This file cannot be played. Try another audio file (mp3, m4a, wav).'],
   recSaving: ['שומר…', 'Saving…'],

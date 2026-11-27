@@ -207,7 +207,7 @@ export default function Recorder({ script, lines, onClose }: { script: Script; l
                   </button>
                   <span className="text-lg font-semibold">{t('recStart')}</span>
                   <div className="flex w-full gap-2">
-                    <label className="btn flex-1 cursor-pointer">
+                    <label className="btn flex-1 cursor-pointer whitespace-nowrap px-2">
                       ⬆ {t('recUpload')}
                       <input
                         type="file"
