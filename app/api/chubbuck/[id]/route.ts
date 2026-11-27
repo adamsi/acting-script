@@ -9,7 +9,7 @@ export const GET = route<P>(async (req, { id }, userId) => {
   const w = await getWorksheet(userId, id);
   if (!w) return json({ error: 'not found' }, 404);
   if (new URL(req.url).searchParams.get('data')) return json(w);
-  const name = `${(w.title || 'scene').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80)} - טבלת צ׳באק.docx`;
+  const name = `${(w.title || 'scene').replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80)} - טבלת צ׳בק.docx`;
   return new Response(new Uint8Array(await buildChubbuckDocx(w)), {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

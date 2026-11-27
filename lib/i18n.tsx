@@ -5,11 +5,11 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 export type Lang = 'he' | 'en';
 
 const dict = {
-  appName: ['עבודה בשיטת צ׳באק', 'Working in the Chubbuck Technique'],
+  appName: ['צ׳בק', 'Chubbuck'],
   chooseTool: ['מה עושים היום?', 'What are we doing today?'],
   toolLearn: ['לימוד טקסט', 'Learn a script'],
   toolLearnDesc: ['האפליקציה מקריאה את שאר הדמויות ומחכה לך בתור שלך', 'The app reads the other characters and waits for you on your lines'],
-  toolChubbuck: ['טבלה בשיטת צ׳באק', 'Chubbuck worksheet'],
+  toolChubbuck: ['טבלה בשיטת צ׳בק', 'Chubbuck worksheet'],
   toolChubbuckDesc: ['מעלים סצנה ומקבלים קובץ Word עם טבלת עבודה מוכנה למילוי', 'Upload a scene and get a Word file with a worksheet ready to fill in'],
   toolSteps: ['12 השלבים', 'The 12 steps'],
   toolArc: ['ניתוח מהלך של דמות', 'Character arc'],
@@ -51,7 +51,7 @@ const dict = {
   errAiTooLong: ['הקובץ ארוך מדי לניתוח בבת אחת. נסו לחלק אותו לכמה קבצים.', 'The file is too long to analyse at once. Try splitting it into several files.'],
   errArcOff: ['הכלי עדיין לא הוגדר (חסר מפתח Gemini).', 'This tool is not set up yet (the Gemini key is missing).'],
   errArcName: ['כתבו את שם הדמות.', 'Write the name of the character.'],
-  toolStepsDesc: ['שנים־עשר הכלים של שיטת צ׳באק, בקצרה', 'The twelve tools of the Chubbuck technique, in brief'],
+  toolStepsDesc: ['שנים־עשר הכלים של שיטת צ׳בק, בקצרה', 'The twelve tools of the Chubbuck technique, in brief'],
   stepsMore: ['להסבר המלא', 'Full explanation'],
   stepWord: ['שלב', 'Step'],
   stepsNotFound: ['השלב לא נמצא.', 'Step not found.'],
@@ -142,7 +142,7 @@ const dict = {
   errEmpty: ['לא נמצא טקסט בקובץ. אם זה PDF סרוק (תמונות של דפים) אי אפשר לקרוא אותו.', 'No text was found. A scanned PDF (pictures of pages) cannot be read.'],
   errBroken: ['לא הצלחנו לקרוא את הקובץ. ייתכן שהוא פגום או מוגן בסיסמה.', 'The file could not be read. It may be damaged or password protected.'],
   delete: ['מחיקה', 'Delete'],
-  toolChubbuckShort: ['טבלת צ׳באק', 'Chubbuck'],
+  toolChubbuckShort: ['טבלת צ׳בק', 'Chubbuck'],
   rowsCount: ['שורות בטבלה', 'table rows'],
   home: ['ראשי', 'Home'],
   signUp: ['הרשמה', 'Sign up'],

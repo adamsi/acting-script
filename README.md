@@ -5,7 +5,7 @@ there are two tools:
 
 - **לימוד טקסט (Learn a script)** — upload a scene, choose who you are, and the app speaks every
   other character with a fitting voice, stops on your lines and continues when you tap.
-- **טבלה בשיטת צ׳באק (Chubbuck worksheet)** — upload a scene, confirm the text, and download a
+- **טבלה בשיטת צ׳בק (Chubbuck worksheet)** — upload a scene, confirm the text, and download a
   Word file: a framed box of general questions (overall objective, substitution, scene objective,
   obstacles, moment before, given circumstances, place and fourth wall) and a table with one row
   per speech and the columns (right to left) obstacles / text / actions / doings / inner dialogue,

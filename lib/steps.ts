@@ -80,7 +80,7 @@ export const STEPS: { title: Pair; text: Pair }[] = [
   {
     title: ['לשחרר', 'Let it go'],
     text: [
-      "להשתמש בכלים של צ'אבק שמשתמשים באינטלקט של השחקן בכדי ליצור התנהגות אנושית אך בזמן המשחק להפסיק להשתמש בראש! העבודה המקדימה אמורה לתת ביטחון ולאפשר לשחרר.",
+      "להשתמש בכלים של צ׳בק שמשתמשים באינטלקט של השחקן בכדי ליצור התנהגות אנושית אך בזמן המשחק להפסיק להשתמש בראש! העבודה המקדימה אמורה לתת ביטחון ולאפשר לשחרר.",
       "Use Chubbuck's tools, which draw on the actor's intellect, to create human behaviour — but while acting, stop using your head! The preparation is there to give you confidence and let you let go.",
     ],
   },

@@ -209,7 +209,7 @@ export async function buildChubbuckDocx(input: ChubbuckInput): Promise<Buffer> {
         children: [
           para([run(input.title || 'סצנה', { bold: true, size: 32 })], { center: true }),
           ...(input.author ? [para([run(input.author, { size: 22, color: '595959' })], { center: true })] : []),
-          para([run('טבלת עבודה בשיטת צ׳באק', { size: 20, color: '7F7F7F' })], { center: true, after: 200 }),
+          para([run('טבלת עבודה בשיטת צ׳בק', { size: 20, color: '7F7F7F' })], { center: true, after: 200 }),
           fieldsBox(),
           // A small gap; it also keeps Word from merging the two tables. No page break: the table
           // starts right below the box, so there is never an empty page.
